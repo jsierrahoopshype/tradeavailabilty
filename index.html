@@ -549,17 +549,17 @@
       const salary1 = player1.salary;
       const salary2 = player2.salary;
 
-      // Team 1 receiving player 2 - check hardcaps (room available)
+      // Team 1 receiving player 2 - check hardcaps
       // Net incoming = salary2 - salary1 (what team 1 adds to payroll)
       const team1NetIncoming = salary2 - salary1;
-      if (player1.hardcap1st > 0 && team1NetIncoming > player1.hardcap1st) return false;
-      if (player1.hardcap2nd > 0 && team1NetIncoming > player1.hardcap2nd) return false;
+      if (player1.isHardcap1st && team1NetIncoming > player1.apronRoom1st) return false;
+      if (player1.isHardcap2nd && team1NetIncoming > player1.apronRoom2nd) return false;
 
-      // Team 2 receiving player 1 - check hardcaps (room available)
+      // Team 2 receiving player 1 - check hardcaps
       // Net incoming = salary1 - salary2 (what team 2 adds to payroll)
       const team2NetIncoming = salary1 - salary2;
-      if (player2.hardcap1st > 0 && team2NetIncoming > player2.hardcap1st) return false;
-      if (player2.hardcap2nd > 0 && team2NetIncoming > player2.hardcap2nd) return false;
+      if (player2.isHardcap1st && team2NetIncoming > player2.apronRoom1st) return false;
+      if (player2.isHardcap2nd && team2NetIncoming > player2.apronRoom2nd) return false;
 
       // Team 1 receiving player 2
       const team1CanReceive = getMaxIncoming(player1.status, salary1, player1.capSpace);
@@ -741,8 +741,10 @@
                 status: row['ST 25-26']?.trim() || row['Team Status']?.trim() || '',
                 capSpace: parseSalary(row['Cap Space'] || row['H'] || 0),
                 globalRating: parseFloat(row['RAT 365'] || 0) || 0,
-                hardcap1st: parseSalary(row['HARD CAP 1st?'] || 0),
-                hardcap2nd: parseSalary(row['HARD CAP 2nd?'] || 0),
+                apronRoom1st: parseSalary(row['1st APRON'] || 0),
+                apronRoom2nd: parseSalary(row['2nd APRON'] || 0),
+                isHardcap1st: (row['HARD CAP 1st?']?.trim() || '').toLowerCase() === 'hc 1st',
+                isHardcap2nd: (row['HARD CAP 2nd?']?.trim() || '').toLowerCase() === 'hc 2nd',
                 tradeAvailable: row['RESTRICTIONS']?.trim() || ''
               }));
 
