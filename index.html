@@ -291,6 +291,17 @@
       color: var(--green);
     }
 
+    .ntc-badge {
+      background: rgba(255, 159, 10, 0.2);
+      color: var(--orange);
+      padding: 0.125rem 0.375rem;
+      border-radius: 4px;
+      font-size: 0.625rem;
+      font-weight: 600;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+
     .not-available-warning {
       background: rgba(255, 69, 58, 0.1);
       border: 1px solid rgba(255, 69, 58, 0.3);
@@ -629,7 +640,7 @@
 
       resultsBody.innerHTML = sorted.map(p => `
         <tr>
-          <td class="player-cell">${p.player}</td>
+          <td class="player-cell">${p.player}${p.noTradeClause ? ' <span class="ntc-badge">NTC</span>' : ''}</td>
           <td>${p.team}</td>
           <td class="rating-cell">${p.globalRating > 0 ? p.globalRating.toFixed(1) : '-'}</td>
           <td class="salary-cell">${formatSalary(p.salary)}</td>
@@ -742,6 +753,7 @@
                   status: row['ST 25-26']?.trim() || row['Team Status']?.trim() || '',
                   capSpace: parseSalary(row['Cap Space'] || row['H'] || 0),
                   globalRating: parseFloat(row['RAT 365'] || 0) || 0,
+                  noTradeClause: (row['NO TRADE'] || '').toString().trim().toUpperCase() === 'YES',
                   apronRoom1st: parseSalary(row['1st APRON'] || row['L'] || 0),
                   apronRoom2nd: parseSalary(row['2nd APRON'] || row['N'] || 0),
                   isHardcap1st: (row['HARD CAP 1st?'] || row['M'] || '').toString().trim().toLowerCase().includes('hc'),
