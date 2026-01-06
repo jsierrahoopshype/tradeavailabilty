@@ -750,19 +750,31 @@
                 const status = row['ST 25-26']?.trim() || row['Team Status']?.trim() || '';
                 return !status.toLowerCase().includes('10-day'); // Exclude 10-day contracts
               })
-              .map(row => ({
-                player: row.PLAYER?.trim() || '',
-                team: row.TEAM?.trim() || '',
-                salary: parseSalary(row['2026']),
-                status: row['ST 25-26']?.trim() || row['Team Status']?.trim() || '',
-                capSpace: parseSalary(row['Cap Space'] || row['H'] || 0),
-                globalRating: parseFloat(row['RAT 365'] || 0) || 0,
-                apronRoom1st: parseSalary(row['1st APRON'] || 0),
-                apronRoom2nd: parseSalary(row['2nd APRON'] || 0),
-                isHardcap1st: (row['HARD CAP 1st?']?.trim() || '').toLowerCase().includes('hc') && (row['HARD CAP 1st?']?.trim() || '').toLowerCase().includes('1'),
-                isHardcap2nd: (row['HARD CAP 2nd?']?.trim() || '').toLowerCase().includes('hc') && (row['HARD CAP 2nd?']?.trim() || '').toLowerCase().includes('2'),
-                tradeAvailable: row['RESTRICTIONS']?.trim() || ''
-              }));
+              .map(row => {
+                const player = {
+                  player: row.PLAYER?.trim() || '',
+                  team: row.TEAM?.trim() || '',
+                  salary: parseSalary(row['2026']),
+                  status: row['ST 25-26']?.trim() || row['Team Status']?.trim() || '',
+                  capSpace: parseSalary(row['Cap Space'] || row['H'] || 0),
+                  globalRating: parseFloat(row['RAT 365'] || 0) || 0,
+                  apronRoom1st: parseSalary(row['1st APRON'] || 0),
+                  apronRoom2nd: parseSalary(row['2nd APRON'] || 0),
+                  isHardcap1st: (row['HARD CAP 1st?']?.trim() || '').toLowerCase().includes('hc') && (row['HARD CAP 1st?']?.trim() || '').toLowerCase().includes('1'),
+                  isHardcap2nd: (row['HARD CAP 2nd?']?.trim() || '').toLowerCase().includes('hc') && (row['HARD CAP 2nd?']?.trim() || '').toLowerCase().includes('2'),
+                  tradeAvailable: row['RESTRICTIONS']?.trim() || ''
+                };
+                // Debug logging for Lakers players
+                if (player.team === 'LA Lakers') {
+                  console.log('Lakers player:', player.player, 'HC1st raw:', row['HARD CAP 1st?'], 'isHardcap1st:', player.isHardcap1st, 'apronRoom1st:', player.apronRoom1st);
+                }
+                return player;
+              });
+            
+            // Log all column headers from first row
+            if (results.data.length > 0) {
+              console.log('CSV Headers:', Object.keys(results.data[0]));
+            }
 
             loadingState.style.display = 'none';
             emptyState.style.display = 'block';
