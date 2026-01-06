@@ -441,10 +441,6 @@
           <span class="detail-label">Cap Space</span>
           <span class="detail-value" id="selectedCapSpace"></span>
         </div>
-        <div class="detail-item" id="hardcapContainer" style="display: none;">
-          <span class="detail-label">Hardcap Room</span>
-          <span class="detail-value" id="selectedHardcap"></span>
-        </div>
       </div>
     </div>
 
@@ -691,18 +687,6 @@
         document.getElementById('selectedCapSpace').textContent = formatSalary(player.capSpace);
       } else {
         capSpaceContainer.style.display = 'none';
-      }
-
-      // Show hardcap info
-      const hardcapContainer = document.getElementById('hardcapContainer');
-      if (player.isHardcap1st) {
-        hardcapContainer.style.display = 'block';
-        document.getElementById('selectedHardcap').textContent = formatSalary(player.apronRoom1st) + ' (1st Apron)';
-      } else if (player.isHardcap2nd) {
-        hardcapContainer.style.display = 'block';
-        document.getElementById('selectedHardcap').textContent = formatSalary(player.apronRoom2nd) + ' (2nd Apron)';
-      } else {
-        hardcapContainer.style.display = 'none';
       }
 
       selectedPlayerEl.classList.add('active');
