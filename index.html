@@ -441,6 +441,10 @@
           <span class="detail-label">Cap Space</span>
           <span class="detail-value" id="selectedCapSpace"></span>
         </div>
+        <div class="detail-item" id="hardcapContainer" style="display: none;">
+          <span class="detail-label">Hardcap Room</span>
+          <span class="detail-value" id="selectedHardcap"></span>
+        </div>
       </div>
     </div>
 
@@ -689,6 +693,18 @@
         capSpaceContainer.style.display = 'none';
       }
 
+      // Show hardcap info
+      const hardcapContainer = document.getElementById('hardcapContainer');
+      if (player.isHardcap1st) {
+        hardcapContainer.style.display = 'block';
+        document.getElementById('selectedHardcap').textContent = formatSalary(player.apronRoom1st) + ' (1st Apron)';
+      } else if (player.isHardcap2nd) {
+        hardcapContainer.style.display = 'block';
+        document.getElementById('selectedHardcap').textContent = formatSalary(player.apronRoom2nd) + ' (2nd Apron)';
+      } else {
+        hardcapContainer.style.display = 'none';
+      }
+
       selectedPlayerEl.classList.add('active');
 
       // Check if player is not available for trade
@@ -743,8 +759,8 @@
                 globalRating: parseFloat(row['RAT 365'] || 0) || 0,
                 apronRoom1st: parseSalary(row['1st APRON'] || 0),
                 apronRoom2nd: parseSalary(row['2nd APRON'] || 0),
-                isHardcap1st: (row['HARD CAP 1st?']?.trim() || '').toLowerCase() === 'hc 1st',
-                isHardcap2nd: (row['HARD CAP 2nd?']?.trim() || '').toLowerCase() === 'hc 2nd',
+                isHardcap1st: (row['HARD CAP 1st?']?.trim() || '').toLowerCase().includes('hc') && (row['HARD CAP 1st?']?.trim() || '').toLowerCase().includes('1'),
+                isHardcap2nd: (row['HARD CAP 2nd?']?.trim() || '').toLowerCase().includes('hc') && (row['HARD CAP 2nd?']?.trim() || '').toLowerCase().includes('2'),
                 tradeAvailable: row['RESTRICTIONS']?.trim() || ''
               }));
 
