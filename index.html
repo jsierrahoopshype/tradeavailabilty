@@ -549,13 +549,17 @@
       const salary1 = player1.salary;
       const salary2 = player2.salary;
 
-      // Team 1 receiving player 2 - check hardcaps
-      if (player1.hardcap1st > 0 && salary2 > player1.hardcap1st) return false;
-      if (player1.hardcap2nd > 0 && salary2 > player1.hardcap2nd) return false;
+      // Team 1 receiving player 2 - check hardcaps (room available)
+      // Net incoming = salary2 - salary1 (what team 1 adds to payroll)
+      const team1NetIncoming = salary2 - salary1;
+      if (player1.hardcap1st > 0 && team1NetIncoming > player1.hardcap1st) return false;
+      if (player1.hardcap2nd > 0 && team1NetIncoming > player1.hardcap2nd) return false;
 
-      // Team 2 receiving player 1 - check hardcaps
-      if (player2.hardcap1st > 0 && salary1 > player2.hardcap1st) return false;
-      if (player2.hardcap2nd > 0 && salary1 > player2.hardcap2nd) return false;
+      // Team 2 receiving player 1 - check hardcaps (room available)
+      // Net incoming = salary1 - salary2 (what team 2 adds to payroll)
+      const team2NetIncoming = salary1 - salary2;
+      if (player2.hardcap1st > 0 && team2NetIncoming > player2.hardcap1st) return false;
+      if (player2.hardcap2nd > 0 && team2NetIncoming > player2.hardcap2nd) return false;
 
       // Team 1 receiving player 2
       const team1CanReceive = getMaxIncoming(player1.status, salary1, player1.capSpace);
@@ -736,10 +740,10 @@
                 salary: parseSalary(row['2026']),
                 status: row['ST 25-26']?.trim() || row['Team Status']?.trim() || '',
                 capSpace: parseSalary(row['Cap Space'] || row['H'] || 0),
-                globalRating: parseFloat(row['Global Rating'] || row['I'] || 0) || 0,
-                hardcap1st: parseSalary(row['AH'] || 0),
-                hardcap2nd: parseSalary(row['AJ'] || 0),
-                tradeAvailable: row['K']?.trim() || ''
+                globalRating: parseFloat(row['RAT 365'] || 0) || 0,
+                hardcap1st: parseSalary(row['HARD CAP 1st?'] || 0),
+                hardcap2nd: parseSalary(row['HARD CAP 2nd?'] || 0),
+                tradeAvailable: row['RESTRICTIONS']?.trim() || ''
               }));
 
             loadingState.style.display = 'none';
