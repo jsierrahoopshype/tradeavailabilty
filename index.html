@@ -758,10 +758,10 @@
                   status: row['ST 25-26']?.trim() || row['Team Status']?.trim() || '',
                   capSpace: parseSalary(row['Cap Space'] || row['H'] || 0),
                   globalRating: parseFloat(row['RAT 365'] || 0) || 0,
-                  apronRoom1st: parseSalary(row['1st APRON'] || 0),
-                  apronRoom2nd: parseSalary(row['2nd APRON'] || 0),
-                  isHardcap1st: (row['HARD CAP 1st?']?.trim() || '').toLowerCase().includes('hc') && (row['HARD CAP 1st?']?.trim() || '').toLowerCase().includes('1'),
-                  isHardcap2nd: (row['HARD CAP 2nd?']?.trim() || '').toLowerCase().includes('hc') && (row['HARD CAP 2nd?']?.trim() || '').toLowerCase().includes('2'),
+                  apronRoom1st: parseSalary(row['1st APRON'] || row['L'] || 0),
+                  apronRoom2nd: parseSalary(row['2nd APRON'] || row['N'] || 0),
+                  isHardcap1st: (row['HARD CAP 1st?'] || row['M'] || '').toString().trim().toLowerCase().includes('hc'),
+                  isHardcap2nd: (row['HARD CAP 2nd?'] || row['O'] || '').toString().trim().toLowerCase().includes('hc'),
                   tradeAvailable: row['RESTRICTIONS']?.trim() || ''
                 };
                 // Debug logging for Lakers players
