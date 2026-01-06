@@ -272,6 +272,35 @@
       font-size: 0.9375rem;
     }
 
+    .rating-cell {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9375rem;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .availability-cell {
+      font-size: 0.875rem;
+    }
+
+    .availability-note {
+      color: var(--orange);
+    }
+
+    .available-now {
+      color: var(--green);
+    }
+
+    .not-available-warning {
+      background: rgba(255, 69, 58, 0.1);
+      border: 1px solid rgba(255, 69, 58, 0.3);
+      color: var(--red);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      font-size: 0.875rem;
+    }
+
     .status-badge {
       display: inline-block;
       padding: 0.25rem 0.625rem;
@@ -396,6 +425,9 @@
         </div>
         <button class="clear-btn" id="clearBtn">Clear</button>
       </div>
+      <div class="not-available-warning" id="notAvailableWarning" style="display: none;">
+        ⚠️ This player is not available for trade before the trade deadline.
+      </div>
       <div class="selected-player-details">
         <div class="detail-item">
           <span class="detail-label">Salary</span>
@@ -422,8 +454,10 @@
           <tr>
             <th><button class="sort-btn" data-sort="player">Player <span class="sort-indicator">▼</span></button></th>
             <th><button class="sort-btn" data-sort="team">Team <span class="sort-indicator">▼</span></button></th>
+            <th><button class="sort-btn" data-sort="rating">Rating <span class="sort-indicator">▼</span></button></th>
             <th><button class="sort-btn" data-sort="salary">Salary <span class="sort-indicator">▼</span></button></th>
             <th><button class="sort-btn" data-sort="status">Team Status <span class="sort-indicator">▼</span></button></th>
+            <th>Availability</th>
           </tr>
         </thead>
         <tbody id="resultsBody"></tbody>
@@ -451,7 +485,7 @@
 
     let players = [];
     let selectedPlayer = null;
-    let currentSort = { column: 'salary', direction: 'desc' };
+    let currentSort = { column: 'rating', direction: 'desc' };
 
     // DOM Elements
     const searchInput = document.getElementById('playerSearch');
@@ -508,9 +542,20 @@
       // Can't trade with same team
       if (player1.team === player2.team) return false;
 
+      // Skip players not available before trade deadline
+      if (player2.tradeAvailable.toLowerCase() === 'not available') return false;
+
       // Get effective salaries (two-way = 0)
       const salary1 = player1.salary;
       const salary2 = player2.salary;
+
+      // Team 1 receiving player 2 - check hardcaps
+      if (player1.hardcap1st > 0 && salary2 > player1.hardcap1st) return false;
+      if (player1.hardcap2nd > 0 && salary2 > player1.hardcap2nd) return false;
+
+      // Team 2 receiving player 1 - check hardcaps
+      if (player2.hardcap1st > 0 && salary1 > player2.hardcap1st) return false;
+      if (player2.hardcap2nd > 0 && salary1 > player2.hardcap2nd) return false;
 
       // Team 1 receiving player 2
       const team1CanReceive = getMaxIncoming(player1.status, salary1, player1.capSpace);
@@ -550,6 +595,10 @@
             valA = a.status;
             valB = b.status;
             break;
+          case 'rating':
+            valA = a.globalRating;
+            valB = b.globalRating;
+            break;
           default:
             return 0;
         }
@@ -578,8 +627,10 @@
         <tr>
           <td class="player-cell">${p.player}</td>
           <td>${p.team}</td>
+          <td class="rating-cell">${p.globalRating > 0 ? p.globalRating.toFixed(1) : '-'}</td>
           <td class="salary-cell">${formatSalary(p.salary)}</td>
           <td><span class="status-badge ${getStatusClass(p.status)}">${p.status}</span></td>
+          <td class="availability-cell">${p.tradeAvailable ? `<span class="availability-note">Available ${p.tradeAvailable}</span>` : '<span class="available-now">Now</span>'}</td>
         </tr>
       `).join('');
     }
@@ -636,6 +687,17 @@
 
       selectedPlayerEl.classList.add('active');
 
+      // Check if player is not available for trade
+      const notAvailableWarning = document.getElementById('notAvailableWarning');
+      if (player.tradeAvailable.toLowerCase() === 'not available') {
+        notAvailableWarning.style.display = 'block';
+        resultsSection.style.display = 'none';
+        noResults.style.display = 'none';
+        return;
+      } else {
+        notAvailableWarning.style.display = 'none';
+      }
+
       // Find and display trade targets
       const targets = findTradeTargets(player);
       renderResults(targets);
@@ -663,12 +725,21 @@
           complete: function(results) {
             players = results.data
               .filter(row => row.PLAYER && row.PLAYER.trim())
+              .filter(row => row.TEAM && row.TEAM.trim()) // Exclude players without a team
+              .filter(row => {
+                const status = row['ST 25-26']?.trim() || row['Team Status']?.trim() || '';
+                return !status.toLowerCase().includes('10-day'); // Exclude 10-day contracts
+              })
               .map(row => ({
                 player: row.PLAYER?.trim() || '',
                 team: row.TEAM?.trim() || '',
                 salary: parseSalary(row['2026']),
                 status: row['ST 25-26']?.trim() || row['Team Status']?.trim() || '',
-                capSpace: parseSalary(row['Cap Space'] || row['H'] || 0)
+                capSpace: parseSalary(row['Cap Space'] || row['H'] || 0),
+                globalRating: parseFloat(row['Global Rating'] || row['I'] || 0) || 0,
+                hardcap1st: parseSalary(row['AH'] || 0),
+                hardcap2nd: parseSalary(row['AJ'] || 0),
+                tradeAvailable: row['K']?.trim() || ''
               }));
 
             loadingState.style.display = 'none';
