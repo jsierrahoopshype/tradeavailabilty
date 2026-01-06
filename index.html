@@ -1,860 +1,1503 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NBA Trade Calculator</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #0a0a0b;
-      --surface: #141416;
-      --surface-hover: #1a1a1d;
-      --border: #2a2a2e;
-      --text: #f5f5f7;
-      --text-secondary: #8e8e93;
-      --accent: #3b82f6;
-      --accent-dim: rgba(59, 130, 246, 0.15);
-      --green: #34c759;
-      --orange: #ff9f0a;
-      --red: #ff453a;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      line-height: 1.5;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 3rem 1.5rem;
-    }
-
-    header {
-      margin-bottom: 3rem;
-    }
-
-    h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      margin-bottom: 0.5rem;
-    }
-
-    .subtitle {
-      color: var(--text-secondary);
-      font-size: 1rem;
-    }
-
-    .search-section {
-      margin-bottom: 2.5rem;
-    }
-
-    .search-container {
-      position: relative;
-      max-width: 480px;
-    }
-
-    .search-input {
-      width: 100%;
-      padding: 1rem 1.25rem;
-      font-size: 1rem;
-      font-family: inherit;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      color: var(--text);
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-
-    .search-input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-dim);
-    }
-
-    .search-input::placeholder {
-      color: var(--text-secondary);
-    }
-
-    .autocomplete-list {
-      position: absolute;
-      top: calc(100% + 4px);
-      left: 0;
-      right: 0;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      max-height: 320px;
-      overflow-y: auto;
-      z-index: 100;
-      display: none;
-    }
-
-    .autocomplete-list.active {
-      display: block;
-    }
-
-    .autocomplete-item {
-      padding: 0.875rem 1.25rem;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid var(--border);
-      transition: background 0.15s;
-    }
-
-    .autocomplete-item:last-child {
-      border-bottom: none;
-    }
-
-    .autocomplete-item:hover,
-    .autocomplete-item.selected {
-      background: var(--surface-hover);
-    }
-
-    .autocomplete-item .player-name {
-      font-weight: 500;
-    }
-
-    .autocomplete-item .player-team {
-      color: var(--text-secondary);
-      font-size: 0.875rem;
-    }
-
-    .selected-player {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 2.5rem;
-      display: none;
-    }
-
-    .selected-player.active {
-      display: block;
-    }
-
-    .selected-player-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 1rem;
-    }
-
-    .selected-player-name {
-      font-size: 1.5rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-
-    .selected-player-team {
-      color: var(--text-secondary);
-      margin-top: 0.25rem;
-    }
-
-    .clear-btn {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text-secondary);
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      font-family: inherit;
-      font-size: 0.875rem;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .clear-btn:hover {
-      background: var(--surface-hover);
-      color: var(--text);
-    }
-
-    .selected-player-details {
-      display: flex;
-      gap: 2rem;
-      flex-wrap: wrap;
-    }
-
-    .detail-item {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-
-    .detail-label {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-secondary);
-    }
-
-    .detail-value {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 1.125rem;
-      font-weight: 500;
-    }
-
-    .results-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-
-    .results-title {
-      font-size: 1.125rem;
-      font-weight: 600;
-    }
-
-    .results-count {
-      color: var(--text-secondary);
-      font-size: 0.875rem;
-    }
-
-    .results-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: var(--surface);
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-
-    .results-table th {
-      text-align: left;
-      padding: 1rem 1.25rem;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-secondary);
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      font-weight: 600;
-    }
-
-    .results-table td {
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .results-table tr:last-child td {
-      border-bottom: none;
-    }
-
-    .results-table tbody tr {
-      transition: background 0.15s;
-    }
-
-    .results-table tbody tr:hover {
-      background: var(--surface-hover);
-    }
-
-    .player-cell {
-      font-weight: 500;
-    }
-
-    .salary-cell {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.9375rem;
-    }
-
-    .rating-cell {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.9375rem;
-      color: var(--accent);
-      font-weight: 500;
-    }
-
-    .availability-cell {
-      font-size: 0.875rem;
-    }
-
-    .availability-note {
-      color: var(--orange);
-    }
-
-    .available-now {
-      color: var(--green);
-    }
-
-    .ntc-badge {
-      background: rgba(255, 159, 10, 0.2);
-      color: var(--orange);
-      padding: 0.125rem 0.375rem;
-      border-radius: 4px;
-      font-size: 0.625rem;
-      font-weight: 600;
-      margin-left: 0.5rem;
-      vertical-align: middle;
-    }
-
-    .not-available-warning {
-      background: rgba(255, 69, 58, 0.1);
-      border: 1px solid rgba(255, 69, 58, 0.3);
-      color: var(--red);
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
-      margin-bottom: 1.5rem;
-      font-size: 0.875rem;
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 0.25rem 0.625rem;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
-    }
-
-    .status-cap-space { background: rgba(52, 199, 89, 0.15); color: var(--green); }
-    .status-below-tax { background: rgba(52, 199, 89, 0.15); color: var(--green); }
-    .status-tax-team { background: rgba(255, 159, 10, 0.15); color: var(--orange); }
-    .status-1st-apron { background: rgba(255, 69, 58, 0.15); color: var(--red); }
-    .status-2nd-apron { background: rgba(255, 69, 58, 0.2); color: var(--red); }
-
-    .empty-state {
-      text-align: center;
-      padding: 4rem 2rem;
-      color: var(--text-secondary);
-    }
-
-    .empty-state-icon {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      opacity: 0.5;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 4rem 2rem;
-      color: var(--text-secondary);
-    }
-
-    .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 1rem;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .no-results {
-      text-align: center;
-      padding: 3rem 2rem;
-      color: var(--text-secondary);
-    }
-
-    .sort-btn {
-      background: none;
-      border: none;
-      color: inherit;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-    }
-
-    .sort-btn:hover {
-      color: var(--text);
-    }
-
-    .sort-indicator {
-      font-size: 0.625rem;
-    }
-
-    @media (max-width: 640px) {
-      .container {
-        padding: 2rem 1rem;
-      }
-
-      h1 {
-        font-size: 1.5rem;
-      }
-
-      .selected-player-details {
-        gap: 1.25rem;
-      }
-
-      .results-table th,
-      .results-table td {
-        padding: 0.875rem 1rem;
-      }
-
-      .detail-value {
-        font-size: 1rem;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Trade Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding: 24px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        h1 {
+            font-size: 28px;
+            color: #e74c3c;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        /* Discovery Section */
+        .discovery-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .discovery-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .discovery-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+        
+        .discovery-card.blue { border-left-color: #1976d2; }
+        .discovery-card.green { border-left-color: #27ae60; }
+        .discovery-card.orange { border-left-color: #f39c12; }
+        
+        .discovery-card h3 {
+            font-size: 14px;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .discovery-card .items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        
+        .discovery-tag {
+            padding: 4px 10px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .discovery-tag:hover {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .discovery-tag.blue:hover { background: #1976d2; }
+        .discovery-tag.green:hover { background: #27ae60; }
+        .discovery-tag.orange:hover { background: #f39c12; }
+        
+        /* Search Section */
+        .search-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .search-container {
+            position: relative;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        #playerSearch {
+            width: 100%;
+            padding: 14px 20px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        #playerSearch:focus {
+            border-color: #e74c3c;
+        }
+        
+        #clearBtn {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #999;
+            display: none;
+        }
+        
+        .autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 100;
+            margin-top: 4px;
+            display: none;
+        }
+        
+        .autocomplete-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .autocomplete-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .autocomplete-item .player-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .autocomplete-item .player-info {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        /* Selected Player Card */
+        .selected-player {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            display: none;
+        }
+        
+        .selected-player.show { display: block; }
+        
+        .selected-player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        
+        .selected-player h2 {
+            font-size: 24px;
+            margin-bottom: 4px;
+            cursor: pointer;
+        }
+        
+        .selected-player h2:hover {
+            text-decoration: underline;
+        }
+        
+        .selected-player .team-link {
+            font-size: 14px;
+            opacity: 0.9;
+            cursor: pointer;
+        }
+        
+        .selected-player .team-link:hover {
+            text-decoration: underline;
+        }
+        
+        .selected-player-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .stat-box {
+            background: rgba(255,255,255,0.15);
+            padding: 12px 16px;
+            border-radius: 8px;
+        }
+        
+        .stat-box .label {
+            font-size: 11px;
+            opacity: 0.8;
+            text-transform: uppercase;
+        }
+        
+        .stat-box .value {
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .trade-warning {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .share-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+        
+        .share-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        /* Results Section */
+        .results-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .results-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .results-count {
+            background: #e74c3c;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-tab {
+            padding: 6px 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .filter-tab:hover, .filter-tab.active {
+            background: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+        }
+        
+        .filter-tab.perfect {
+            border-color: #27ae60;
+        }
+        
+        .filter-tab.perfect:hover, .filter-tab.perfect.active {
+            background: #27ae60;
+            border-color: #27ae60;
+        }
+        
+        /* Results Table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .results-table th {
+            text-align: left;
+            padding: 12px;
+            font-size: 12px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            border-bottom: 2px solid #f0f0f0;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        
+        .results-table th:hover {
+            color: #e74c3c;
+        }
+        
+        .results-table td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+        
+        .results-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .player-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .player-cell .name {
+            font-weight: 600;
+            color: #2c3e50;
+            cursor: pointer;
+        }
+        
+        .player-cell .name:hover {
+            color: #e74c3c;
+            text-decoration: underline;
+        }
+        
+        .player-cell .contract-info {
+            font-size: 11px;
+            color: #7f8c8d;
+        }
+        
+        .team-cell {
+            color: #1976d2;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .team-cell:hover {
+            text-decoration: underline;
+        }
+        
+        .salary-cell {
+            font-weight: 600;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .status-badge.cap-space { background: #d4edda; color: #155724; }
+        .status-badge.below-tax { background: #d1ecf1; color: #0c5460; }
+        .status-badge.tax-team { background: #fff3cd; color: #856404; }
+        .status-badge.first-apron { background: #f8d7da; color: #721c24; }
+        .status-badge.second-apron { background: #721c24; color: white; }
+        
+        .fit-score {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .fit-bar {
+            width: 60px;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .fit-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        
+        .fit-bar-fill.high { background: #27ae60; }
+        .fit-bar-fill.medium { background: #f39c12; }
+        .fit-bar-fill.low { background: #e74c3c; }
+        
+        .cba-explainer {
+            font-size: 11px;
+            color: #7f8c8d;
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-top: 6px;
+            border-left: 3px solid #1976d2;
+        }
+        
+        .availability-badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+        
+        .availability-badge.available { background: #d4edda; color: #155724; }
+        .availability-badge.restricted { background: #fff3cd; color: #856404; }
+        .availability-badge.unavailable { background: #f8d7da; color: #721c24; }
+        
+        .perfect-match-badge {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        /* Team Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            font-size: 20px;
+        }
+        
+        .modal-header .team-status {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        
+        .modal-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .roster-player {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .roster-player:hover {
+            background: #f8f9fa;
+        }
+        
+        .roster-player .name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .roster-player .salary {
+            font-family: 'SF Mono', Monaco, monospace;
+            color: #7f8c8d;
+        }
+        
+        /* Empty/Loading States */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #7f8c8d;
+        }
+        
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+        
+        /* Leaderboard */
+        .leaderboard-section {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .leaderboard-section h3 {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .leaderboard-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #f8f9fa;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .leaderboard-item:hover {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .leaderboard-item .count {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .leaderboard-item:hover .count {
+            background: white;
+            color: #e74c3c;
+        }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #2c3e50;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 2000;
+            transition: transform 0.3s;
+        }
+        
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .discovery-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .results-table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            .selected-player-header {
+                flex-direction: column;
+                gap: 12px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>NBA Trade Calculator</h1>
-      <p class="subtitle">Find salary-matching trade options based on CBA rules</p>
-    </header>
-
-    <section class="search-section">
-      <div class="search-container">
-        <input 
-          type="text" 
-          class="search-input" 
-          id="playerSearch" 
-          placeholder="Search for a player..."
-          autocomplete="off"
-        >
-        <div class="autocomplete-list" id="autocompleteList"></div>
-      </div>
-    </section>
-
-    <div class="selected-player" id="selectedPlayer">
-      <div class="selected-player-header">
-        <div>
-          <div class="selected-player-name" id="selectedName"></div>
-          <div class="selected-player-team" id="selectedTeam"></div>
-        </div>
-        <button class="clear-btn" id="clearBtn">Clear</button>
-      </div>
-      <div class="not-available-warning" id="notAvailableWarning" style="display: none;">
-        ⚠️ This player is not available for trade before the trade deadline.
-      </div>
-      <div class="selected-player-details">
-        <div class="detail-item">
-          <span class="detail-label">Salary</span>
-          <span class="detail-value" id="selectedSalary"></span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">Team Status</span>
-          <span class="detail-value" id="selectedStatus"></span>
-        </div>
-        <div class="detail-item" id="capSpaceContainer" style="display: none;">
-          <span class="detail-label">Cap Space</span>
-          <span class="detail-value" id="selectedCapSpace"></span>
-        </div>
-      </div>
-    </div>
-
-    <div id="resultsSection" style="display: none;">
-      <div class="results-header">
-        <span class="results-title">Available Trade Targets</span>
-        <span class="results-count" id="resultsCount"></span>
-      </div>
-      <table class="results-table">
-        <thead>
-          <tr>
-            <th><button class="sort-btn" data-sort="player">Player <span class="sort-indicator">▼</span></button></th>
-            <th><button class="sort-btn" data-sort="team">Team <span class="sort-indicator">▼</span></button></th>
-            <th><button class="sort-btn" data-sort="rating">Rating <span class="sort-indicator">▼</span></button></th>
-            <th><button class="sort-btn" data-sort="salary">Salary <span class="sort-indicator">▼</span></button></th>
-            <th><button class="sort-btn" data-sort="status">Team Status <span class="sort-indicator">▼</span></button></th>
-            <th>Availability</th>
-          </tr>
-        </thead>
-        <tbody id="resultsBody"></tbody>
-      </table>
-    </div>
-
-    <div class="loading" id="loadingState">
-      <div class="spinner"></div>
-      <p>Loading player data...</p>
-    </div>
-
-    <div class="empty-state" id="emptyState" style="display: none;">
-      <div class="empty-state-icon">🏀</div>
-      <p>Search for a player to see available trade options</p>
-    </div>
-
-    <div class="no-results" id="noResults" style="display: none;">
-      <p>No matching trade targets found for this player</p>
-    </div>
-  </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <script>
-    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg6im6IYB6HXMGzQbmmBnLw9SfQLzxCSo8OfChxlJLhsB6BBCO0wPF_TMch0YgAbtFqYkwDWrsxRe7/pub?output=csv';
-
-    let players = [];
-    let selectedPlayer = null;
-    let currentSort = { column: 'rating', direction: 'desc' };
-
-    // DOM Elements
-    const searchInput = document.getElementById('playerSearch');
-    const autocompleteList = document.getElementById('autocompleteList');
-    const selectedPlayerEl = document.getElementById('selectedPlayer');
-    const resultsSection = document.getElementById('resultsSection');
-    const resultsBody = document.getElementById('resultsBody');
-    const resultsCount = document.getElementById('resultsCount');
-    const loadingState = document.getElementById('loadingState');
-    const emptyState = document.getElementById('emptyState');
-    const noResults = document.getElementById('noResults');
-    const clearBtn = document.getElementById('clearBtn');
-
-    // Parse salary string to number
-    function parseSalary(salaryStr) {
-      if (!salaryStr || salaryStr === '') return 0;
-      return parseFloat(salaryStr.toString().replace(/[$,]/g, '')) || 0;
-    }
-
-    // Format number as currency
-    function formatSalary(num) {
-      if (num === 0) return '$0';
-      return '$' + num.toLocaleString('en-US', { maximumFractionDigits: 0 });
-    }
-
-    // Get status class for badge
-    function getStatusClass(status) {
-      const statusMap = {
-        'Cap Space': 'status-cap-space',
-        'Below Tax': 'status-below-tax',
-        'Tax Team': 'status-tax-team',
-        '1st Apron': 'status-1st-apron',
-        '2nd Apron': 'status-2nd-apron'
-      };
-      return statusMap[status] || '';
-    }
-
-    // Calculate max incoming salary based on team status and outgoing salary
-    function getMaxIncoming(status, outgoingSalary, capSpace = 0) {
-      if (status === 'Cap Space') {
-        return capSpace + outgoingSalary;
-      } else if (status === '2nd Apron') {
-        return outgoingSalary + 250000;
-      } else if (status === '1st Apron') {
-        return outgoingSalary * 1.1 + 250000;
-      } else {
-        // Below Tax or Tax Team
-        return outgoingSalary * 1.75 + 250000;
-      }
-    }
-
-    // Check if trade is valid both ways
-    function isValidTrade(player1, player2) {
-      // Can't trade with same team
-      if (player1.team === player2.team) return false;
-
-      // Skip players not available before trade deadline
-      if (player2.tradeAvailable.toLowerCase() === 'not available') return false;
-
-      // Get effective salaries (two-way = 0)
-      const salary1 = player1.salary;
-      const salary2 = player2.salary;
-
-      // Team 1 receiving player 2 - check hardcaps
-      // Net incoming = salary2 - salary1 (what team 1 adds to payroll)
-      const team1NetIncoming = salary2 - salary1;
-      if (player1.isHardcap1st && team1NetIncoming > player1.apronRoom1st) return false;
-      if (player1.isHardcap2nd && team1NetIncoming > player1.apronRoom2nd) return false;
-
-      // Team 2 receiving player 1 - check hardcaps
-      // Net incoming = salary1 - salary2 (what team 2 adds to payroll)
-      const team2NetIncoming = salary1 - salary2;
-      if (player2.isHardcap1st && team2NetIncoming > player2.apronRoom1st) return false;
-      if (player2.isHardcap2nd && team2NetIncoming > player2.apronRoom2nd) return false;
-
-      // Team 1 receiving player 2
-      const team1CanReceive = getMaxIncoming(player1.status, salary1, player1.capSpace);
-      if (salary2 > team1CanReceive) return false;
-
-      // Team 2 receiving player 1
-      const team2CanReceive = getMaxIncoming(player2.status, salary2, player2.capSpace);
-      if (salary1 > team2CanReceive) return false;
-
-      return true;
-    }
-
-    // Find all valid trade targets for a player
-    function findTradeTargets(player) {
-      return players.filter(p => isValidTrade(player, p));
-    }
-
-    // Sort results
-    function sortResults(results, column, direction) {
-      return [...results].sort((a, b) => {
-        let valA, valB;
+    <div class="container">
+        <header>
+            <h1>🏀 NBA Trade Calculator</h1>
+            <p class="subtitle">Find CBA-compliant salary matches for any player</p>
+        </header>
         
-        switch (column) {
-          case 'player':
-            valA = a.player.toLowerCase();
-            valB = b.player.toLowerCase();
-            break;
-          case 'team':
-            valA = a.team.toLowerCase();
-            valB = b.team.toLowerCase();
-            break;
-          case 'salary':
-            valA = a.salary;
-            valB = b.salary;
-            break;
-          case 'status':
-            valA = a.status;
-            valB = b.status;
-            break;
-          case 'rating':
-            valA = a.globalRating;
-            valB = b.globalRating;
-            break;
-          default:
-            return 0;
-        }
-
-        if (valA < valB) return direction === 'asc' ? -1 : 1;
-        if (valA > valB) return direction === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
-
-    // Render results table
-    function renderResults(results) {
-      if (results.length === 0) {
-        resultsSection.style.display = 'none';
-        noResults.style.display = 'block';
-        return;
-      }
-
-      noResults.style.display = 'none';
-      resultsSection.style.display = 'block';
-      resultsCount.textContent = `${results.length} player${results.length !== 1 ? 's' : ''}`;
-
-      const sorted = sortResults(results, currentSort.column, currentSort.direction);
-
-      resultsBody.innerHTML = sorted.map(p => `
-        <tr>
-          <td class="player-cell">${p.player}${p.noTradeClause ? ' <span class="ntc-badge">NTC</span>' : ''}</td>
-          <td>${p.team}</td>
-          <td class="rating-cell">${p.globalRating > 0 ? p.globalRating.toFixed(1) : '-'}</td>
-          <td class="salary-cell">${formatSalary(p.salary)}</td>
-          <td><span class="status-badge ${getStatusClass(p.status)}">${p.status}</span></td>
-          <td class="availability-cell">${p.tradeAvailable ? `<span class="availability-note">Available ${p.tradeAvailable}</span>` : '<span class="available-now">Now</span>'}</td>
-        </tr>
-      `).join('');
-    }
-
-    // Show autocomplete suggestions
-    function showSuggestions(query) {
-      if (!query || query.length < 2) {
-        autocompleteList.classList.remove('active');
-        return;
-      }
-
-      const matches = players
-        .filter(p => p.player.toLowerCase().includes(query.toLowerCase()))
-        .slice(0, 10);
-
-      if (matches.length === 0) {
-        autocompleteList.classList.remove('active');
-        return;
-      }
-
-      autocompleteList.innerHTML = matches.map(p => `
-        <div class="autocomplete-item" data-player="${p.player}">
-          <span class="player-name">${p.player}</span>
-          <span class="player-team">${p.team}</span>
-        </div>
-      `).join('');
-
-      autocompleteList.classList.add('active');
-    }
-
-    // Select a player
-    function selectPlayer(playerName) {
-      const player = players.find(p => p.player === playerName);
-      if (!player) return;
-
-      selectedPlayer = player;
-      searchInput.value = '';
-      autocompleteList.classList.remove('active');
-      emptyState.style.display = 'none';
-
-      // Update selected player display
-      document.getElementById('selectedName').textContent = player.player;
-      document.getElementById('selectedTeam').textContent = player.team;
-      document.getElementById('selectedSalary').textContent = formatSalary(player.salary);
-      document.getElementById('selectedStatus').textContent = player.status;
-
-      const capSpaceContainer = document.getElementById('capSpaceContainer');
-      if (player.status === 'Cap Space' && player.capSpace > 0) {
-        capSpaceContainer.style.display = 'block';
-        document.getElementById('selectedCapSpace').textContent = formatSalary(player.capSpace);
-      } else {
-        capSpaceContainer.style.display = 'none';
-      }
-
-      selectedPlayerEl.classList.add('active');
-
-      // Check if player is not available for trade
-      const notAvailableWarning = document.getElementById('notAvailableWarning');
-      if (player.tradeAvailable.toLowerCase() === 'not available') {
-        notAvailableWarning.style.display = 'block';
-        resultsSection.style.display = 'none';
-        noResults.style.display = 'none';
-        return;
-      } else {
-        notAvailableWarning.style.display = 'none';
-      }
-
-      // Find and display trade targets
-      const targets = findTradeTargets(player);
-      renderResults(targets);
-    }
-
-    // Clear selection
-    function clearSelection() {
-      selectedPlayer = null;
-      selectedPlayerEl.classList.remove('active');
-      resultsSection.style.display = 'none';
-      noResults.style.display = 'none';
-      emptyState.style.display = 'block';
-      searchInput.value = '';
-    }
-
-    // Load data
-    async function loadData() {
-      try {
-        const response = await fetch(CSV_URL);
-        const csvText = await response.text();
-        
-        Papa.parse(csvText, {
-          header: true,
-          skipEmptyLines: true,
-          complete: function(results) {
-            players = results.data
-              .filter(row => row.PLAYER && row.PLAYER.trim())
-              .filter(row => row.TEAM && row.TEAM.trim()) // Exclude players without a team
-              .filter(row => {
-                const status = row['ST 25-26']?.trim() || row['Team Status']?.trim() || '';
-                return !status.toLowerCase().includes('10-day'); // Exclude 10-day contracts
-              })
-              .map(row => {
-                const player = {
-                  player: row.PLAYER?.trim() || '',
-                  team: row.TEAM?.trim() || '',
-                  salary: parseSalary(row['2026']),
-                  status: row['ST 25-26']?.trim() || row['Team Status']?.trim() || '',
-                  capSpace: parseSalary(row['Cap Space'] || row['H'] || 0),
-                  globalRating: parseFloat(row['RAT 365'] || 0) || 0,
-                  noTradeClause: (row['NO TRADE'] || '').toString().trim().toUpperCase() === 'YES',
-                  apronRoom1st: parseSalary(row['1st APRON'] || row['L'] || 0),
-                  apronRoom2nd: parseSalary(row['2nd APRON'] || row['N'] || 0),
-                  isHardcap1st: (row['HARD CAP 1st?'] || row['M'] || '').toString().trim().toLowerCase().includes('hc'),
-                  isHardcap2nd: (row['HARD CAP 2nd?'] || row['O'] || '').toString().trim().toLowerCase().includes('hc'),
-                  tradeAvailable: row['RESTRICTIONS']?.trim() || ''
-                };
-                // Debug logging for Lakers players
-                if (player.team === 'LA Lakers') {
-                  console.log('Lakers player:', player.player, 'HC1st raw:', row['HARD CAP 1st?'], 'isHardcap1st:', player.isHardcap1st, 'apronRoom1st:', player.apronRoom1st);
-                }
-                return player;
-              });
+        <!-- Discovery Section -->
+        <div class="discovery-section">
+            <div class="discovery-card" id="hotTargetsCard">
+                <h3>🔥 Hot Trade Targets</h3>
+                <div class="items" id="hotTargets">
+                    <span class="discovery-tag">Loading...</span>
+                </div>
+            </div>
             
-            // Log all column headers from first row
-            if (results.data.length > 0) {
-              console.log('CSV Headers:', Object.keys(results.data[0]));
+            <div class="discovery-card blue" id="perfectMatchesCard">
+                <h3>💎 Perfect Salary Matches</h3>
+                <div class="items" id="perfectMatches">
+                    <span class="discovery-tag blue">Loading...</span>
+                </div>
+            </div>
+            
+            <div class="discovery-card orange" id="capHellCard">
+                <h3>🚨 Cap Hell Teams</h3>
+                <div class="items" id="capHellTeams">
+                    <span class="discovery-tag orange">Loading...</span>
+                </div>
+            </div>
+            
+            <div class="discovery-card green" id="tradePicksCard">
+                <h3>🎯 Trade Machine Picks</h3>
+                <div class="items" id="tradePicks">
+                    <span class="discovery-tag green">Loading...</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Search Section -->
+        <div class="search-section">
+            <div class="search-container">
+                <input type="text" id="playerSearch" placeholder="Search for any player..." autocomplete="off">
+                <button id="clearBtn">✕</button>
+                <div class="autocomplete-list" id="autocomplete"></div>
+            </div>
+        </div>
+        
+        <!-- Selected Player Card -->
+        <div class="selected-player" id="selectedPlayer">
+            <div class="selected-player-header">
+                <div>
+                    <h2 id="selectedName"></h2>
+                    <span class="team-link" id="selectedTeam"></span>
+                </div>
+                <button class="share-btn" id="shareBtn">📤 Share Results</button>
+            </div>
+            <div class="selected-player-stats">
+                <div class="stat-box">
+                    <div class="label">Salary</div>
+                    <div class="value" id="selectedSalary"></div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Team Status</div>
+                    <div class="value" id="selectedStatus"></div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Cap Space</div>
+                    <div class="value" id="selectedCapSpace"></div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Trade Matches</div>
+                    <div class="value" id="selectedMatches"></div>
+                </div>
+            </div>
+            <div class="trade-warning" id="tradeWarning" style="display: none;">
+                ⚠️ <span id="warningText"></span>
+            </div>
+        </div>
+        
+        <!-- Results Section -->
+        <div class="results-section">
+            <div class="results-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span class="results-title">Available Trade Targets</span>
+                    <span class="results-count" id="resultsCount">0</span>
+                </div>
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-filter="all">All</button>
+                    <button class="filter-tab perfect" data-filter="perfect">💎 Perfect</button>
+                    <button class="filter-tab" data-filter="available">✓ Available</button>
+                    <button class="filter-tab" data-filter="high-fit">High Fit</button>
+                </div>
+            </div>
+            
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th data-sort="player">Player ▼</th>
+                        <th data-sort="team">Team ▼</th>
+                        <th data-sort="salary">Salary ▼</th>
+                        <th data-sort="status">Status ▼</th>
+                        <th data-sort="fit">Fit ▼</th>
+                        <th>Availability</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="icon">🏀</div>
+                                <div>Search for a player to see available trade options</div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Leaderboard -->
+        <div class="leaderboard-section">
+            <h3>📊 Most Searched This Week</h3>
+            <div class="leaderboard-items" id="leaderboard">
+                <span style="color: #7f8c8d; font-size: 13px;">Start searching to build the leaderboard</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Team Modal -->
+    <div class="modal-overlay" id="teamModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <h2 id="modalTeamName"></h2>
+                    <div class="team-status" id="modalTeamStatus"></div>
+                </div>
+                <button class="modal-close" id="modalClose">✕</button>
+            </div>
+            <div class="modal-body" id="modalRoster"></div>
+        </div>
+    </div>
+    
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        // Configuration
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSsample/pub?output=csv'; // Replace with your actual URL
+        
+        // State
+        let allPlayers = [];
+        let selectedPlayer = null;
+        let currentResults = [];
+        let sortColumn = 'salary';
+        let sortDirection = 'desc';
+        let activeFilter = 'all';
+        
+        // CBA Rules
+        const CBA_RULES = {
+            'Cap Space': { multiplier: 1, bonus: 0, usesCapSpace: true },
+            'Below Tax': { multiplier: 1.75, bonus: 250000 },
+            'Tax Team': { multiplier: 1.75, bonus: 250000 },
+            '1st Apron': { multiplier: 1.10, bonus: 250000 },
+            '2nd Apron': { multiplier: 1.00, bonus: 250000 }
+        };
+        
+        // Leaderboard (localStorage)
+        function getLeaderboard() {
+            try {
+                const data = localStorage.getItem('tradeCalcLeaderboard');
+                return data ? JSON.parse(data) : {};
+            } catch (e) {
+                return {};
             }
-
-            loadingState.style.display = 'none';
-            emptyState.style.display = 'block';
-          },
-          error: function(error) {
-            console.error('Parse error:', error);
-            loadingState.innerHTML = '<p>Error loading data. Please refresh the page.</p>';
-          }
-        });
-      } catch (error) {
-        console.error('Fetch error:', error);
-        loadingState.innerHTML = '<p>Error loading data. Please refresh the page.</p>';
-      }
-    }
-
-    // Event listeners
-    searchInput.addEventListener('input', (e) => {
-      showSuggestions(e.target.value);
-    });
-
-    searchInput.addEventListener('focus', () => {
-      if (searchInput.value.length >= 2) {
-        showSuggestions(searchInput.value);
-      }
-    });
-
-    autocompleteList.addEventListener('click', (e) => {
-      const item = e.target.closest('.autocomplete-item');
-      if (item) {
-        selectPlayer(item.dataset.player);
-      }
-    });
-
-    clearBtn.addEventListener('click', clearSelection);
-
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.search-container')) {
-        autocompleteList.classList.remove('active');
-      }
-    });
-
-    // Keyboard navigation for autocomplete
-    let selectedIndex = -1;
-    searchInput.addEventListener('keydown', (e) => {
-      const items = autocompleteList.querySelectorAll('.autocomplete-item');
-      
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
-        items.forEach((item, i) => item.classList.toggle('selected', i === selectedIndex));
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        selectedIndex = Math.max(selectedIndex - 1, 0);
-        items.forEach((item, i) => item.classList.toggle('selected', i === selectedIndex));
-      } else if (e.key === 'Enter' && selectedIndex >= 0) {
-        e.preventDefault();
-        selectPlayer(items[selectedIndex].dataset.player);
-        selectedIndex = -1;
-      } else if (e.key === 'Escape') {
-        autocompleteList.classList.remove('active');
-        selectedIndex = -1;
-      }
-    });
-
-    // Sort buttons
-    document.querySelectorAll('.sort-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const column = btn.dataset.sort;
-        if (currentSort.column === column) {
-          currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-        } else {
-          currentSort.column = column;
-          currentSort.direction = 'desc';
         }
         
-        if (selectedPlayer) {
-          const targets = findTradeTargets(selectedPlayer);
-          renderResults(targets);
+        function updateLeaderboard(playerName) {
+            const lb = getLeaderboard();
+            lb[playerName] = (lb[playerName] || 0) + 1;
+            
+            // Keep only top 20
+            const sorted = Object.entries(lb)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 20);
+            
+            localStorage.setItem('tradeCalcLeaderboard', JSON.stringify(Object.fromEntries(sorted)));
+            renderLeaderboard();
         }
-      });
-    });
-
-    // Initialize
-    loadData();
-  </script>
+        
+        function renderLeaderboard() {
+            const lb = getLeaderboard();
+            const container = document.getElementById('leaderboard');
+            
+            const sorted = Object.entries(lb)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            if (sorted.length === 0) {
+                container.innerHTML = '<span style="color: #7f8c8d; font-size: 13px;">Start searching to build the leaderboard</span>';
+                return;
+            }
+            
+            container.innerHTML = sorted.map(([name, count]) => `
+                <div class="leaderboard-item" onclick="searchPlayer('${name.replace(/'/g, "\\'")}')">
+                    ${name}
+                    <span class="count">${count}</span>
+                </div>
+            `).join('');
+        }
+        
+        // Parse CSV
+        function parseCSV(csv) {
+            const lines = csv.split('\n');
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            
+            return lines.slice(1).filter(line => line.trim()).map(line => {
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (const char of line) {
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current.trim());
+                
+                const obj = {};
+                headers.forEach((h, i) => {
+                    obj[h] = values[i] || '';
+                });
+                
+                return obj;
+            });
+        }
+        
+        // Parse salary string to number
+        function parseSalary(str) {
+            if (!str) return 0;
+            return parseInt(str.replace(/[$,]/g, '')) || 0;
+        }
+        
+        // Format salary
+        function formatSalary(num) {
+            if (num >= 1000000) {
+                return '$' + (num / 1000000).toFixed(1) + 'M';
+            }
+            return '$' + num.toLocaleString();
+        }
+        
+        // Get team status class
+        function getStatusClass(status) {
+            const map = {
+                'Cap Space': 'cap-space',
+                'Below Tax': 'below-tax',
+                'Tax Team': 'tax-team',
+                '1st Apron': 'first-apron',
+                '2nd Apron': 'second-apron'
+            };
+            return map[status] || '';
+        }
+        
+        // Calculate max incoming salary
+        function getMaxIncoming(player) {
+            const status = player['ST 25-26'] || player['Team Status'] || '';
+            const rules = CBA_RULES[status];
+            
+            if (!rules) return 0;
+            
+            const outgoing = parseSalary(player['2026'] || player['Salary']);
+            
+            if (rules.usesCapSpace) {
+                const capSpace = parseSalary(player['Cap Space'] || player['H'] || '0');
+                return outgoing + capSpace;
+            }
+            
+            return outgoing * rules.multiplier + rules.bonus;
+        }
+        
+        // Check if trade is legal (both directions)
+        function canTrade(player1, player2) {
+            const salary1 = parseSalary(player1['2026'] || player1['Salary']);
+            const salary2 = parseSalary(player2['2026'] || player2['Salary']);
+            
+            const max1CanReceive = getMaxIncoming(player1);
+            const max2CanReceive = getMaxIncoming(player2);
+            
+            return salary2 <= max1CanReceive && salary1 <= max2CanReceive;
+        }
+        
+        // Generate CBA explainer
+        function getCBAExplainer(fromPlayer, toPlayer) {
+            const fromSalary = parseSalary(fromPlayer['2026'] || fromPlayer['Salary']);
+            const toSalary = parseSalary(toPlayer['2026'] || toPlayer['Salary']);
+            const toStatus = toPlayer['ST 25-26'] || toPlayer['Team Status'] || '';
+            const rules = CBA_RULES[toStatus];
+            
+            if (!rules) return '';
+            
+            if (rules.usesCapSpace) {
+                const capSpace = parseSalary(toPlayer['Cap Space'] || toPlayer['H'] || '0');
+                return `${toPlayer['TEAM'] || toPlayer['Team']} can absorb using ${formatSalary(capSpace)} cap space + ${formatSalary(toSalary)} outgoing`;
+            }
+            
+            const maxReceive = toSalary * rules.multiplier + rules.bonus;
+            const percentage = Math.round(rules.multiplier * 100);
+            return `${percentage}% of ${formatSalary(toSalary)} = ${formatSalary(maxReceive)} max incoming`;
+        }
+        
+        // Calculate fit score (simple algorithm)
+        function calculateFitScore(fromPlayer, toPlayer) {
+            let score = 50;
+            
+            const salaryDiff = Math.abs(
+                parseSalary(fromPlayer['2026'] || fromPlayer['Salary']) - 
+                parseSalary(toPlayer['2026'] || toPlayer['Salary'])
+            );
+            
+            // Closer salaries = better fit
+            if (salaryDiff < 1000000) score += 30;
+            else if (salaryDiff < 5000000) score += 20;
+            else if (salaryDiff < 10000000) score += 10;
+            
+            // Available players get bonus
+            const avail = toPlayer['Availability'] || '';
+            if (avail === 'Available' || !avail) score += 20;
+            
+            return Math.min(100, Math.max(0, score));
+        }
+        
+        // Check if perfect salary match (within 5%)
+        function isPerfectMatch(player1, player2) {
+            const s1 = parseSalary(player1['2026'] || player1['Salary']);
+            const s2 = parseSalary(player2['2026'] || player2['Salary']);
+            const diff = Math.abs(s1 - s2);
+            return diff / Math.max(s1, s2) < 0.05;
+        }
+        
+        // Find trade matches for a player
+        function findMatches(player) {
+            const team = player['TEAM'] || player['Team'];
+            
+            return allPlayers
+                .filter(p => (p['TEAM'] || p['Team']) !== team)
+                .filter(p => canTrade(player, p))
+                .map(p => ({
+                    ...p,
+                    fitScore: calculateFitScore(player, p),
+                    isPerfect: isPerfectMatch(player, p),
+                    cbaExplainer: getCBAExplainer(player, p)
+                }));
+        }
+        
+        // Render results
+        function renderResults(matches) {
+            const tbody = document.getElementById('resultsBody');
+            
+            if (matches.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="icon">😕</div>
+                                <div>No matching trade targets found for this player</div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('resultsCount').textContent = '0';
+                return;
+            }
+            
+            // Apply filter
+            let filtered = matches;
+            if (activeFilter === 'perfect') {
+                filtered = matches.filter(m => m.isPerfect);
+            } else if (activeFilter === 'available') {
+                filtered = matches.filter(m => !m['Availability'] || m['Availability'] === 'Available');
+            } else if (activeFilter === 'high-fit') {
+                filtered = matches.filter(m => m.fitScore >= 70);
+            }
+            
+            // Sort
+            filtered.sort((a, b) => {
+                let aVal, bVal;
+                switch (sortColumn) {
+                    case 'player':
+                        aVal = (a['PLAYER'] || a['Player'] || '').toLowerCase();
+                        bVal = (b['PLAYER'] || b['Player'] || '').toLowerCase();
+                        break;
+                    case 'team':
+                        aVal = (a['TEAM'] || a['Team'] || '').toLowerCase();
+                        bVal = (b['TEAM'] || b['Team'] || '').toLowerCase();
+                        break;
+                    case 'salary':
+                        aVal = parseSalary(a['2026'] || a['Salary']);
+                        bVal = parseSalary(b['2026'] || b['Salary']);
+                        break;
+                    case 'status':
+                        aVal = (a['ST 25-26'] || a['Team Status'] || '').toLowerCase();
+                        bVal = (b['ST 25-26'] || b['Team Status'] || '').toLowerCase();
+                        break;
+                    case 'fit':
+                        aVal = a.fitScore;
+                        bVal = b.fitScore;
+                        break;
+                    default:
+                        aVal = parseSalary(a['2026'] || a['Salary']);
+                        bVal = parseSalary(b['2026'] || b['Salary']);
+                }
+                
+                if (sortDirection === 'asc') {
+                    return aVal > bVal ? 1 : -1;
+                }
+                return aVal < bVal ? 1 : -1;
+            });
+            
+            document.getElementById('resultsCount').textContent = filtered.length;
+            
+            tbody.innerHTML = filtered.map(p => {
+                const name = p['PLAYER'] || p['Player'];
+                const team = p['TEAM'] || p['Team'];
+                const salary = parseSalary(p['2026'] || p['Salary']);
+                const status = p['ST 25-26'] || p['Team Status'] || '';
+                const avail = p['Availability'] || 'Available';
+                const contract = p['Contract'] || '';
+                
+                const fitLevel = p.fitScore >= 70 ? 'high' : p.fitScore >= 40 ? 'medium' : 'low';
+                
+                let availClass = 'available';
+                if (avail.includes('Restricted') || avail.includes('Limited')) availClass = 'restricted';
+                if (avail.includes('Unavailable') || avail.includes('Not')) availClass = 'unavailable';
+                
+                return `
+                    <tr>
+                        <td>
+                            <div class="player-cell">
+                                <span class="name" onclick="searchPlayer('${name.replace(/'/g, "\\'")}')">${name}</span>
+                                ${p.isPerfect ? '<span class="perfect-match-badge">PERFECT MATCH</span>' : ''}
+                                ${contract ? `<span class="contract-info">${contract}</span>` : ''}
+                            </div>
+                            <div class="cba-explainer">${p.cbaExplainer}</div>
+                        </td>
+                        <td class="team-cell" onclick="showTeam('${team}')">${team}</td>
+                        <td class="salary-cell">${formatSalary(salary)}</td>
+                        <td><span class="status-badge ${getStatusClass(status)}">${status}</span></td>
+                        <td>
+                            <div class="fit-score">
+                                <div class="fit-bar">
+                                    <div class="fit-bar-fill ${fitLevel}" style="width: ${p.fitScore}%"></div>
+                                </div>
+                                <span>${p.fitScore}</span>
+                            </div>
+                        </td>
+                        <td><span class="availability-badge ${availClass}">${avail}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // Select player
+        function selectPlayer(player) {
+            selectedPlayer = player;
+            
+            const name = player['PLAYER'] || player['Player'];
+            const team = player['TEAM'] || player['Team'];
+            const salary = parseSalary(player['2026'] || player['Salary']);
+            const status = player['ST 25-26'] || player['Team Status'] || '';
+            const capSpace = parseSalary(player['Cap Space'] || player['H'] || '0');
+            const avail = player['Availability'] || '';
+            
+            document.getElementById('selectedName').textContent = name;
+            document.getElementById('selectedName').onclick = () => searchPlayer(name);
+            document.getElementById('selectedTeam').textContent = team;
+            document.getElementById('selectedTeam').onclick = () => showTeam(team);
+            document.getElementById('selectedSalary').textContent = formatSalary(salary);
+            document.getElementById('selectedStatus').textContent = status;
+            document.getElementById('selectedCapSpace').textContent = status === 'Cap Space' ? formatSalary(capSpace) : 'N/A';
+            
+            const matches = findMatches(player);
+            currentResults = matches;
+            
+            document.getElementById('selectedMatches').textContent = matches.length;
+            document.getElementById('selectedPlayer').classList.add('show');
+            
+            // Show warning if not available
+            if (avail && avail !== 'Available') {
+                document.getElementById('tradeWarning').style.display = 'flex';
+                document.getElementById('warningText').textContent = avail;
+            } else {
+                document.getElementById('tradeWarning').style.display = 'none';
+            }
+            
+            renderResults(matches);
+            updateLeaderboard(name);
+            
+            // Update URL
+            const url = new URL(window.location);
+            url.searchParams.set('player', name);
+            window.history.pushState({}, '', url);
+        }
+        
+        // Search for player by name
+        function searchPlayer(name) {
+            const player = allPlayers.find(p => 
+                (p['PLAYER'] || p['Player'])?.toLowerCase() === name.toLowerCase()
+            );
+            if (player) {
+                document.getElementById('playerSearch').value = name;
+                document.getElementById('clearBtn').style.display = 'block';
+                document.getElementById('autocomplete').style.display = 'none';
+                selectPlayer(player);
+            }
+        }
+        
+        // Show team modal
+        function showTeam(teamName) {
+            const roster = allPlayers.filter(p => 
+                (p['TEAM'] || p['Team']) === teamName
+            ).sort((a, b) => {
+                const s1 = parseSalary(a['2026'] || a['Salary']);
+                const s2 = parseSalary(b['2026'] || b['Salary']);
+                return s2 - s1;
+            });
+            
+            if (roster.length === 0) return;
+            
+            const status = roster[0]['ST 25-26'] || roster[0]['Team Status'] || '';
+            const capSpace = parseSalary(roster[0]['Cap Space'] || roster[0]['H'] || '0');
+            
+            document.getElementById('modalTeamName').textContent = teamName;
+            document.getElementById('modalTeamStatus').textContent = 
+                `${status}${status === 'Cap Space' ? ` • ${formatSalary(capSpace)} available` : ''}`;
+            
+            document.getElementById('modalRoster').innerHTML = roster.map(p => {
+                const name = p['PLAYER'] || p['Player'];
+                const salary = parseSalary(p['2026'] || p['Salary']);
+                return `
+                    <div class="roster-player" onclick="closeModal(); searchPlayer('${name.replace(/'/g, "\\'")}')">
+                        <span class="name">${name}</span>
+                        <span class="salary">${formatSalary(salary)}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('teamModal').classList.add('show');
+        }
+        
+        function closeModal() {
+            document.getElementById('teamModal').classList.remove('show');
+        }
+        
+        // Calculate discovery features
+        function calculateDiscoveryFeatures() {
+            // Hot Trade Targets (most possible trade partners)
+            const tradeCounts = allPlayers.map(p => ({
+                player: p,
+                count: allPlayers.filter(other => 
+                    (other['TEAM'] || other['Team']) !== (p['TEAM'] || p['Team']) && 
+                    canTrade(p, other)
+                ).length
+            })).sort((a, b) => b.count - a.count);
+            
+            const hotTargets = tradeCounts.slice(0, 6).map(t => ({
+                name: t.player['PLAYER'] || t.player['Player'],
+                count: t.count
+            }));
+            
+            document.getElementById('hotTargets').innerHTML = hotTargets.map(h => 
+                `<span class="discovery-tag" onclick="searchPlayer('${h.name.replace(/'/g, "\\'")}')">${h.name} (${h.count})</span>`
+            ).join('');
+            
+            // Perfect Salary Matches
+            const perfectPairs = [];
+            for (let i = 0; i < allPlayers.length; i++) {
+                for (let j = i + 1; j < allPlayers.length; j++) {
+                    if ((allPlayers[i]['TEAM'] || allPlayers[i]['Team']) !== (allPlayers[j]['TEAM'] || allPlayers[j]['Team'])) {
+                        if (isPerfectMatch(allPlayers[i], allPlayers[j]) && canTrade(allPlayers[i], allPlayers[j])) {
+                            perfectPairs.push({
+                                p1: allPlayers[i]['PLAYER'] || allPlayers[i]['Player'],
+                                p2: allPlayers[j]['PLAYER'] || allPlayers[j]['Player'],
+                                salary: parseSalary(allPlayers[i]['2026'] || allPlayers[i]['Salary'])
+                            });
+                        }
+                    }
+                }
+            }
+            
+            perfectPairs.sort((a, b) => b.salary - a.salary);
+            const topPerfect = perfectPairs.slice(0, 4);
+            
+            document.getElementById('perfectMatches').innerHTML = topPerfect.map(p => 
+                `<span class="discovery-tag blue" onclick="searchPlayer('${p.p1.replace(/'/g, "\\'")}')">${p.p1} ↔ ${p.p2}</span>`
+            ).join('') || '<span class="discovery-tag blue">None found</span>';
+            
+            // Cap Hell Teams (2nd Apron)
+            const capHellTeams = [...new Set(
+                allPlayers
+                    .filter(p => (p['ST 25-26'] || p['Team Status']) === '2nd Apron')
+                    .map(p => p['TEAM'] || p['Team'])
+            )];
+            
+            document.getElementById('capHellTeams').innerHTML = capHellTeams.slice(0, 6).map(t => 
+                `<span class="discovery-tag orange" onclick="showTeam('${t}')">${t}</span>`
+            ).join('') || '<span class="discovery-tag orange">None</span>';
+            
+            // Trade Machine Picks (balanced 2-player swaps with similar salaries)
+            const tradePicks = perfectPairs
+                .filter(p => p.salary > 10000000) // Only notable salaries
+                .slice(0, 4);
+            
+            document.getElementById('tradePicks').innerHTML = tradePicks.map(p => 
+                `<span class="discovery-tag green" onclick="searchPlayer('${p.p1.replace(/'/g, "\\'")}')">${p.p1} for ${p.p2}</span>`
+            ).join('') || '<span class="discovery-tag green">Calculating...</span>';
+        }
+        
+        // Share functionality
+        function shareResults() {
+            if (!selectedPlayer) return;
+            
+            const name = selectedPlayer['PLAYER'] || selectedPlayer['Player'];
+            const url = `${window.location.origin}${window.location.pathname}?player=${encodeURIComponent(name)}`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: `NBA Trade Calculator - ${name}`,
+                    text: `Found ${currentResults.length} trade matches for ${name}`,
+                    url: url
+                });
+            } else {
+                navigator.clipboard.writeText(url);
+                showToast('Link copied to clipboard!');
+            }
+        }
+        
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+        
+        // Initialize
+        async function init() {
+            try {
+                // For demo, use sample data if CSV fails
+                try {
+                    const response = await fetch(CSV_URL);
+                    const csv = await response.text();
+                    allPlayers = parseCSV(csv);
+                } catch (e) {
+                    console.log('Using sample data');
+                    // Sample data for testing
+                    allPlayers = generateSampleData();
+                }
+                
+                calculateDiscoveryFeatures();
+                renderLeaderboard();
+                
+                // Check URL for player param
+                const urlParams = new URLSearchParams(window.location.search);
+                const playerParam = urlParams.get('player');
+                if (playerParam) {
+                    searchPlayer(playerParam);
+                }
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+        
+        // Sample data generator for testing
+        function generateSampleData() {
+            const teams = [
+                { name: 'Lakers', status: '1st Apron' },
+                { name: 'Celtics', status: 'Tax Team' },
+                { name: 'Warriors', status: '2nd Apron' },
+                { name: 'Heat', status: 'Below Tax' },
+                { name: 'Nuggets', status: 'Tax Team' },
+                { name: 'Bucks', status: '1st Apron' },
+                { name: 'Suns', status: '2nd Apron' },
+                { name: 'Thunder', status: 'Cap Space', capSpace: 15000000 },
+                { name: 'Spurs', status: 'Cap Space', capSpace: 30000000 },
+                { name: 'Pistons', status: 'Cap Space', capSpace: 25000000 }
+            ];
+            
+            const players = [
+                { name: 'LeBron James', team: 'Lakers', salary: 47607350 },
+                { name: 'Anthony Davis', team: 'Lakers', salary: 43219440 },
+                { name: 'Austin Reaves', team: 'Lakers', salary: 12016854 },
+                { name: 'Jayson Tatum', team: 'Celtics', salary: 34848340 },
+                { name: 'Jaylen Brown', team: 'Celtics', salary: 49205800 },
+                { name: 'Stephen Curry', team: 'Warriors', salary: 55761216 },
+                { name: 'Draymond Green', team: 'Warriors', salary: 22300000 },
+                { name: 'Jimmy Butler', team: 'Heat', salary: 48798677 },
+                { name: 'Bam Adebayo', team: 'Heat', salary: 34848340 },
+                { name: 'Nikola Jokic', team: 'Nuggets', salary: 51415938 },
+                { name: 'Jamal Murray', team: 'Nuggets', salary: 33833400 },
+                { name: 'Giannis Antetokounmpo', team: 'Bucks', salary: 48787676 },
+                { name: 'Damian Lillard', team: 'Bucks', salary: 45640084 },
+                { name: 'Kevin Durant', team: 'Suns', salary: 51179021 },
+                { name: 'Devin Booker', team: 'Suns', salary: 36016200 },
+                { name: 'Bradley Beal', team: 'Suns', salary: 46741590 },
+                { name: 'Shai Gilgeous-Alexander', team: 'Thunder', salary: 35000000 },
+                { name: 'Chet Holmgren', team: 'Thunder', salary: 10875720 },
+                { name: 'Victor Wembanyama', team: 'Spurs', salary: 12200880 },
+                { name: 'Cade Cunningham', team: 'Pistons', salary: 10050120 }
+            ];
+            
+            return players.map(p => {
+                const teamInfo = teams.find(t => t.name === p.team);
+                return {
+                    'PLAYER': p.name,
+                    'TEAM': p.team,
+                    '2026': '$' + p.salary.toLocaleString(),
+                    'ST 25-26': teamInfo.status,
+                    'Cap Space': teamInfo.capSpace ? '$' + teamInfo.capSpace.toLocaleString() : '',
+                    'Availability': 'Available'
+                };
+            });
+        }
+        
+        // Event Listeners
+        document.getElementById('playerSearch').addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase().trim();
+            const autocomplete = document.getElementById('autocomplete');
+            const clearBtn = document.getElementById('clearBtn');
+            
+            clearBtn.style.display = query ? 'block' : 'none';
+            
+            if (query.length < 2) {
+                autocomplete.style.display = 'none';
+                return;
+            }
+            
+            const matches = allPlayers.filter(p => 
+                (p['PLAYER'] || p['Player'] || '').toLowerCase().includes(query)
+            ).slice(0, 8);
+            
+            if (matches.length === 0) {
+                autocomplete.style.display = 'none';
+                return;
+            }
+            
+            autocomplete.innerHTML = matches.map(p => {
+                const name = p['PLAYER'] || p['Player'];
+                const team = p['TEAM'] || p['Team'];
+                const salary = parseSalary(p['2026'] || p['Salary']);
+                return `
+                    <div class="autocomplete-item" onclick="selectPlayer(${JSON.stringify(p).replace(/"/g, '&quot;')})">
+                        <span class="player-name">${name}</span>
+                        <span class="player-info">${team} • ${formatSalary(salary)}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            autocomplete.style.display = 'block';
+        });
+        
+        document.getElementById('clearBtn').addEventListener('click', function() {
+            document.getElementById('playerSearch').value = '';
+            document.getElementById('autocomplete').style.display = 'none';
+            this.style.display = 'none';
+            document.getElementById('selectedPlayer').classList.remove('show');
+            selectedPlayer = null;
+            currentResults = [];
+            document.getElementById('resultsBody').innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <div class="icon">🏀</div>
+                            <div>Search for a player to see available trade options</div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            const url = new URL(window.location);
+            url.searchParams.delete('player');
+            window.history.pushState({}, '', url);
+        });
+        
+        // Close autocomplete on click outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-container')) {
+                document.getElementById('autocomplete').style.display = 'none';
+            }
+        });
+        
+        // Sort handlers
+        document.querySelectorAll('.results-table th[data-sort]').forEach(th => {
+            th.addEventListener('click', function() {
+                const col = this.dataset.sort;
+                if (sortColumn === col) {
+                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortColumn = col;
+                    sortDirection = 'desc';
+                }
+                renderResults(currentResults);
+            });
+        });
+        
+        // Filter handlers
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                activeFilter = this.dataset.filter;
+                renderResults(currentResults);
+            });
+        });
+        
+        // Modal close
+        document.getElementById('modalClose').addEventListener('click', closeModal);
+        document.getElementById('teamModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+        
+        // Share button
+        document.getElementById('shareBtn').addEventListener('click', shareResults);
+        
+        // Initialize on load
+        init();
+    </script>
 </body>
 </html>
