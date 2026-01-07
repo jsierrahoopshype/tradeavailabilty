@@ -815,8 +815,8 @@
     <div class="toast" id="toast"></div>
     
     <script>
-        // Configuration
-        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSsample/pub?output=csv'; // Replace with your actual URL
+        // Configuration - Replace with your published Google Sheet CSV URL
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg6im6IYB6HXMGzQbmmBnLw9SfQLzxCSo8OfChxlJLhsB6BBC0OwPF_TMch0YgAbtFqYkwDWrsxRe7/pub?gid=0&single=true&output=csv';
         
         // State
         let allPlayers = [];
@@ -924,29 +924,49 @@
             return '$' + num.toLocaleString();
         }
         
+        // Normalize column access (handles variations in column names)
+        function getPlayer(p) { return p['PLAYER'] || p['Player'] || ''; }
+        function getTeam(p) { return p['TEAM'] || p['Team'] || ''; }
+        function getSalary(p) { return p['2026'] || p['Salary'] || ''; }
+        function getStatus(p) { return p['TEAM STATUS'] || p['ST 25-26'] || p['Team Status'] || ''; }
+        function getCapSpace(p) { return p['CAP SPACE'] || p['Cap Space'] || ''; }
+        function getRating(p) { return parseFloat(p['RAT 365'] || p['Rating'] || '0') || 0; }
+        function getNoTrade(p) { return p['NO TRADE'] || ''; }
+        function getRestrictions(p) { return p['RESTRICTIONS'] || p['Availability'] || ''; }
+        
         // Get team status class
         function getStatusClass(status) {
-            const map = {
-                'Cap Space': 'cap-space',
-                'Below Tax': 'below-tax',
-                'Tax Team': 'tax-team',
-                '1st Apron': 'first-apron',
-                '2nd Apron': 'second-apron'
-            };
-            return map[status] || '';
+            const s = status.toUpperCase();
+            if (s.includes('CAP SPACE')) return 'cap-space';
+            if (s.includes('BELOW TAX')) return 'below-tax';
+            if (s.includes('TAX TEAM') || s === 'TAX') return 'tax-team';
+            if (s.includes('1ST') || s.includes('FIRST')) return 'first-apron';
+            if (s.includes('2ND') || s.includes('SECOND')) return 'second-apron';
+            return '';
+        }
+        
+        // Normalize status for CBA rules lookup
+        function normalizeStatus(status) {
+            const s = status.toUpperCase();
+            if (s.includes('CAP SPACE')) return 'Cap Space';
+            if (s.includes('BELOW TAX')) return 'Below Tax';
+            if (s.includes('TAX TEAM') || s === 'TAX') return 'Tax Team';
+            if (s.includes('1ST') || s.includes('FIRST')) return '1st Apron';
+            if (s.includes('2ND') || s.includes('SECOND')) return '2nd Apron';
+            return status;
         }
         
         // Calculate max incoming salary
         function getMaxIncoming(player) {
-            const status = player['ST 25-26'] || player['Team Status'] || '';
+            const status = normalizeStatus(getStatus(player));
             const rules = CBA_RULES[status];
             
             if (!rules) return 0;
             
-            const outgoing = parseSalary(player['2026'] || player['Salary']);
+            const outgoing = parseSalary(getSalary(player));
             
             if (rules.usesCapSpace) {
-                const capSpace = parseSalary(player['Cap Space'] || player['H'] || '0');
+                const capSpace = parseSalary(getCapSpace(player));
                 return outgoing + capSpace;
             }
             
@@ -955,8 +975,11 @@
         
         // Check if trade is legal (both directions)
         function canTrade(player1, player2) {
-            const salary1 = parseSalary(player1['2026'] || player1['Salary']);
-            const salary2 = parseSalary(player2['2026'] || player2['Salary']);
+            const salary1 = parseSalary(getSalary(player1));
+            const salary2 = parseSalary(getSalary(player2));
+            
+            // Skip players with no salary
+            if (salary1 === 0 || salary2 === 0) return false;
             
             const max1CanReceive = getMaxIncoming(player1);
             const max2CanReceive = getMaxIncoming(player2);
@@ -966,16 +989,17 @@
         
         // Generate CBA explainer
         function getCBAExplainer(fromPlayer, toPlayer) {
-            const fromSalary = parseSalary(fromPlayer['2026'] || fromPlayer['Salary']);
-            const toSalary = parseSalary(toPlayer['2026'] || toPlayer['Salary']);
-            const toStatus = toPlayer['ST 25-26'] || toPlayer['Team Status'] || '';
+            const fromSalary = parseSalary(getSalary(fromPlayer));
+            const toSalary = parseSalary(getSalary(toPlayer));
+            const toStatus = normalizeStatus(getStatus(toPlayer));
+            const toTeam = getTeam(toPlayer);
             const rules = CBA_RULES[toStatus];
             
             if (!rules) return '';
             
             if (rules.usesCapSpace) {
-                const capSpace = parseSalary(toPlayer['Cap Space'] || toPlayer['H'] || '0');
-                return `${toPlayer['TEAM'] || toPlayer['Team']} can absorb using ${formatSalary(capSpace)} cap space + ${formatSalary(toSalary)} outgoing`;
+                const capSpace = parseSalary(getCapSpace(toPlayer));
+                return `${toTeam} can absorb using ${formatSalary(capSpace)} cap space + ${formatSalary(toSalary)} outgoing`;
             }
             
             const maxReceive = toSalary * rules.multiplier + rules.bonus;
@@ -988,8 +1012,8 @@
             let score = 50;
             
             const salaryDiff = Math.abs(
-                parseSalary(fromPlayer['2026'] || fromPlayer['Salary']) - 
-                parseSalary(toPlayer['2026'] || toPlayer['Salary'])
+                parseSalary(getSalary(fromPlayer)) - 
+                parseSalary(getSalary(toPlayer))
             );
             
             // Closer salaries = better fit
@@ -997,27 +1021,34 @@
             else if (salaryDiff < 5000000) score += 20;
             else if (salaryDiff < 10000000) score += 10;
             
-            // Available players get bonus
-            const avail = toPlayer['Availability'] || '';
-            if (avail === 'Available' || !avail) score += 20;
+            // Available players get bonus (no restrictions)
+            const restrictions = getRestrictions(toPlayer);
+            if (!restrictions) score += 20;
+            
+            // Higher rated players get bonus
+            const rating = getRating(toPlayer);
+            if (rating >= 10) score += 10;
+            else if (rating >= 5) score += 5;
             
             return Math.min(100, Math.max(0, score));
         }
         
         // Check if perfect salary match (within 5%)
         function isPerfectMatch(player1, player2) {
-            const s1 = parseSalary(player1['2026'] || player1['Salary']);
-            const s2 = parseSalary(player2['2026'] || player2['Salary']);
+            const s1 = parseSalary(getSalary(player1));
+            const s2 = parseSalary(getSalary(player2));
+            if (s1 === 0 || s2 === 0) return false;
             const diff = Math.abs(s1 - s2);
             return diff / Math.max(s1, s2) < 0.05;
         }
         
         // Find trade matches for a player
         function findMatches(player) {
-            const team = player['TEAM'] || player['Team'];
+            const team = getTeam(player);
             
             return allPlayers
-                .filter(p => (p['TEAM'] || p['Team']) !== team)
+                .filter(p => getTeam(p) !== team)
+                .filter(p => parseSalary(getSalary(p)) > 0) // Must have salary
                 .filter(p => canTrade(player, p))
                 .map(p => ({
                     ...p,
@@ -1051,7 +1082,7 @@
             if (activeFilter === 'perfect') {
                 filtered = matches.filter(m => m.isPerfect);
             } else if (activeFilter === 'available') {
-                filtered = matches.filter(m => !m['Availability'] || m['Availability'] === 'Available');
+                filtered = matches.filter(m => !getRestrictions(m) && !getNoTrade(m));
             } else if (activeFilter === 'high-fit') {
                 filtered = matches.filter(m => m.fitScore >= 70);
             }
@@ -1061,28 +1092,28 @@
                 let aVal, bVal;
                 switch (sortColumn) {
                     case 'player':
-                        aVal = (a['PLAYER'] || a['Player'] || '').toLowerCase();
-                        bVal = (b['PLAYER'] || b['Player'] || '').toLowerCase();
+                        aVal = getPlayer(a).toLowerCase();
+                        bVal = getPlayer(b).toLowerCase();
                         break;
                     case 'team':
-                        aVal = (a['TEAM'] || a['Team'] || '').toLowerCase();
-                        bVal = (b['TEAM'] || b['Team'] || '').toLowerCase();
+                        aVal = getTeam(a).toLowerCase();
+                        bVal = getTeam(b).toLowerCase();
                         break;
                     case 'salary':
-                        aVal = parseSalary(a['2026'] || a['Salary']);
-                        bVal = parseSalary(b['2026'] || b['Salary']);
+                        aVal = parseSalary(getSalary(a));
+                        bVal = parseSalary(getSalary(b));
                         break;
                     case 'status':
-                        aVal = (a['ST 25-26'] || a['Team Status'] || '').toLowerCase();
-                        bVal = (b['ST 25-26'] || b['Team Status'] || '').toLowerCase();
+                        aVal = getStatus(a).toLowerCase();
+                        bVal = getStatus(b).toLowerCase();
                         break;
                     case 'fit':
                         aVal = a.fitScore;
                         bVal = b.fitScore;
                         break;
                     default:
-                        aVal = parseSalary(a['2026'] || a['Salary']);
-                        bVal = parseSalary(b['2026'] || b['Salary']);
+                        aVal = parseSalary(getSalary(a));
+                        bVal = parseSalary(getSalary(b));
                 }
                 
                 if (sortDirection === 'asc') {
@@ -1094,18 +1125,26 @@
             document.getElementById('resultsCount').textContent = filtered.length;
             
             tbody.innerHTML = filtered.map(p => {
-                const name = p['PLAYER'] || p['Player'];
-                const team = p['TEAM'] || p['Team'];
-                const salary = parseSalary(p['2026'] || p['Salary']);
-                const status = p['ST 25-26'] || p['Team Status'] || '';
-                const avail = p['Availability'] || 'Available';
-                const contract = p['Contract'] || '';
+                const name = getPlayer(p);
+                const team = getTeam(p);
+                const salary = parseSalary(getSalary(p));
+                const status = getStatus(p);
+                const restrictions = getRestrictions(p);
+                const noTrade = getNoTrade(p);
+                const rating = getRating(p);
                 
                 const fitLevel = p.fitScore >= 70 ? 'high' : p.fitScore >= 40 ? 'medium' : 'low';
                 
+                // Determine availability status
+                let availText = 'Available';
                 let availClass = 'available';
-                if (avail.includes('Restricted') || avail.includes('Limited')) availClass = 'restricted';
-                if (avail.includes('Unavailable') || avail.includes('Not')) availClass = 'unavailable';
+                if (noTrade === 'YES') {
+                    availText = 'No-Trade Clause';
+                    availClass = 'unavailable';
+                } else if (restrictions) {
+                    availText = `Until ${restrictions}`;
+                    availClass = 'restricted';
+                }
                 
                 return `
                     <tr>
@@ -1113,7 +1152,7 @@
                             <div class="player-cell">
                                 <span class="name" onclick="searchPlayer('${name.replace(/'/g, "\\'")}')">${name}</span>
                                 ${p.isPerfect ? '<span class="perfect-match-badge">PERFECT MATCH</span>' : ''}
-                                ${contract ? `<span class="contract-info">${contract}</span>` : ''}
+                                ${rating > 0 ? `<span class="contract-info">Rating: ${rating.toFixed(1)}</span>` : ''}
                             </div>
                             <div class="cba-explainer">${p.cbaExplainer}</div>
                         </td>
@@ -1128,7 +1167,7 @@
                                 <span>${p.fitScore}</span>
                             </div>
                         </td>
-                        <td><span class="availability-badge ${availClass}">${avail}</span></td>
+                        <td><span class="availability-badge ${availClass}">${availText}</span></td>
                     </tr>
                 `;
             }).join('');
@@ -1138,12 +1177,13 @@
         function selectPlayer(player) {
             selectedPlayer = player;
             
-            const name = player['PLAYER'] || player['Player'];
-            const team = player['TEAM'] || player['Team'];
-            const salary = parseSalary(player['2026'] || player['Salary']);
-            const status = player['ST 25-26'] || player['Team Status'] || '';
-            const capSpace = parseSalary(player['Cap Space'] || player['H'] || '0');
-            const avail = player['Availability'] || '';
+            const name = getPlayer(player);
+            const team = getTeam(player);
+            const salary = parseSalary(getSalary(player));
+            const status = getStatus(player);
+            const capSpace = parseSalary(getCapSpace(player));
+            const restrictions = getRestrictions(player);
+            const noTrade = getNoTrade(player);
             
             document.getElementById('selectedName').textContent = name;
             document.getElementById('selectedName').onclick = () => searchPlayer(name);
@@ -1151,7 +1191,7 @@
             document.getElementById('selectedTeam').onclick = () => showTeam(team);
             document.getElementById('selectedSalary').textContent = formatSalary(salary);
             document.getElementById('selectedStatus').textContent = status;
-            document.getElementById('selectedCapSpace').textContent = status === 'Cap Space' ? formatSalary(capSpace) : 'N/A';
+            document.getElementById('selectedCapSpace').textContent = normalizeStatus(status) === 'Cap Space' ? formatSalary(capSpace) : 'N/A';
             
             const matches = findMatches(player);
             currentResults = matches;
@@ -1160,9 +1200,12 @@
             document.getElementById('selectedPlayer').classList.add('show');
             
             // Show warning if not available
-            if (avail && avail !== 'Available') {
+            if (noTrade === 'YES') {
                 document.getElementById('tradeWarning').style.display = 'flex';
-                document.getElementById('warningText').textContent = avail;
+                document.getElementById('warningText').textContent = 'This player has a no-trade clause';
+            } else if (restrictions) {
+                document.getElementById('tradeWarning').style.display = 'flex';
+                document.getElementById('warningText').textContent = `This player cannot be traded until ${restrictions}`;
             } else {
                 document.getElementById('tradeWarning').style.display = 'none';
             }
@@ -1179,7 +1222,7 @@
         // Search for player by name
         function searchPlayer(name) {
             const player = allPlayers.find(p => 
-                (p['PLAYER'] || p['Player'])?.toLowerCase() === name.toLowerCase()
+                getPlayer(p).toLowerCase() === name.toLowerCase()
             );
             if (player) {
                 document.getElementById('playerSearch').value = name;
@@ -1192,29 +1235,31 @@
         // Show team modal
         function showTeam(teamName) {
             const roster = allPlayers.filter(p => 
-                (p['TEAM'] || p['Team']) === teamName
-            ).sort((a, b) => {
-                const s1 = parseSalary(a['2026'] || a['Salary']);
-                const s2 = parseSalary(b['2026'] || b['Salary']);
+                getTeam(p) === teamName
+            ).filter(p => parseSalary(getSalary(p)) > 0)
+            .sort((a, b) => {
+                const s1 = parseSalary(getSalary(a));
+                const s2 = parseSalary(getSalary(b));
                 return s2 - s1;
             });
             
             if (roster.length === 0) return;
             
-            const status = roster[0]['ST 25-26'] || roster[0]['Team Status'] || '';
-            const capSpace = parseSalary(roster[0]['Cap Space'] || roster[0]['H'] || '0');
+            const status = getStatus(roster[0]);
+            const capSpace = parseSalary(getCapSpace(roster[0]));
             
             document.getElementById('modalTeamName').textContent = teamName;
             document.getElementById('modalTeamStatus').textContent = 
-                `${status}${status === 'Cap Space' ? ` • ${formatSalary(capSpace)} available` : ''}`;
+                `${status}${normalizeStatus(status) === 'Cap Space' ? ` • ${formatSalary(capSpace)} available` : ''}`;
             
             document.getElementById('modalRoster').innerHTML = roster.map(p => {
-                const name = p['PLAYER'] || p['Player'];
-                const salary = parseSalary(p['2026'] || p['Salary']);
+                const name = getPlayer(p);
+                const salary = parseSalary(getSalary(p));
+                const rating = getRating(p);
                 return `
                     <div class="roster-player" onclick="closeModal(); searchPlayer('${name.replace(/'/g, "\\'")}')">
                         <span class="name">${name}</span>
-                        <span class="salary">${formatSalary(salary)}</span>
+                        <span class="salary">${formatSalary(salary)}${rating > 0 ? ` • ${rating.toFixed(1)}` : ''}</span>
                     </div>
                 `;
             }).join('');
@@ -1228,17 +1273,20 @@
         
         // Calculate discovery features
         function calculateDiscoveryFeatures() {
+            // Filter to players with actual salaries
+            const validPlayers = allPlayers.filter(p => parseSalary(getSalary(p)) > 0);
+            
             // Hot Trade Targets (most possible trade partners)
-            const tradeCounts = allPlayers.map(p => ({
+            const tradeCounts = validPlayers.map(p => ({
                 player: p,
-                count: allPlayers.filter(other => 
-                    (other['TEAM'] || other['Team']) !== (p['TEAM'] || p['Team']) && 
+                count: validPlayers.filter(other => 
+                    getTeam(other) !== getTeam(p) && 
                     canTrade(p, other)
                 ).length
             })).sort((a, b) => b.count - a.count);
             
             const hotTargets = tradeCounts.slice(0, 6).map(t => ({
-                name: t.player['PLAYER'] || t.player['Player'],
+                name: getPlayer(t.player),
                 count: t.count
             }));
             
@@ -1248,14 +1296,14 @@
             
             // Perfect Salary Matches
             const perfectPairs = [];
-            for (let i = 0; i < allPlayers.length; i++) {
-                for (let j = i + 1; j < allPlayers.length; j++) {
-                    if ((allPlayers[i]['TEAM'] || allPlayers[i]['Team']) !== (allPlayers[j]['TEAM'] || allPlayers[j]['Team'])) {
-                        if (isPerfectMatch(allPlayers[i], allPlayers[j]) && canTrade(allPlayers[i], allPlayers[j])) {
+            for (let i = 0; i < validPlayers.length; i++) {
+                for (let j = i + 1; j < validPlayers.length; j++) {
+                    if (getTeam(validPlayers[i]) !== getTeam(validPlayers[j])) {
+                        if (isPerfectMatch(validPlayers[i], validPlayers[j]) && canTrade(validPlayers[i], validPlayers[j])) {
                             perfectPairs.push({
-                                p1: allPlayers[i]['PLAYER'] || allPlayers[i]['Player'],
-                                p2: allPlayers[j]['PLAYER'] || allPlayers[j]['Player'],
-                                salary: parseSalary(allPlayers[i]['2026'] || allPlayers[i]['Salary'])
+                                p1: getPlayer(validPlayers[i]),
+                                p2: getPlayer(validPlayers[j]),
+                                salary: parseSalary(getSalary(validPlayers[i]))
                             });
                         }
                     }
@@ -1271,9 +1319,9 @@
             
             // Cap Hell Teams (2nd Apron)
             const capHellTeams = [...new Set(
-                allPlayers
-                    .filter(p => (p['ST 25-26'] || p['Team Status']) === '2nd Apron')
-                    .map(p => p['TEAM'] || p['Team'])
+                validPlayers
+                    .filter(p => normalizeStatus(getStatus(p)) === '2nd Apron')
+                    .map(p => getTeam(p))
             )];
             
             document.getElementById('capHellTeams').innerHTML = capHellTeams.slice(0, 6).map(t => 
@@ -1410,7 +1458,7 @@
             }
             
             const matches = allPlayers.filter(p => 
-                (p['PLAYER'] || p['Player'] || '').toLowerCase().includes(query)
+                getPlayer(p).toLowerCase().includes(query) && parseSalary(getSalary(p)) > 0
             ).slice(0, 8);
             
             if (matches.length === 0) {
@@ -1419,9 +1467,9 @@
             }
             
             autocomplete.innerHTML = matches.map(p => {
-                const name = p['PLAYER'] || p['Player'];
-                const team = p['TEAM'] || p['Team'];
-                const salary = parseSalary(p['2026'] || p['Salary']);
+                const name = getPlayer(p);
+                const team = getTeam(p);
+                const salary = parseSalary(getSalary(p));
                 return `
                     <div class="autocomplete-item" onclick="selectPlayer(${JSON.stringify(p).replace(/"/g, '&quot;')})">
                         <span class="player-name">${name}</span>
