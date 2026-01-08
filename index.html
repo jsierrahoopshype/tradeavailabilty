@@ -881,25 +881,21 @@
         
         // Parse CSV
         function parseCSV(csv) {
-            const lines = csv.split('\n');
-            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            // Normalize line endings (handle Windows \r\n)
+            csv = csv.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             
-            return lines.slice(1).filter(line => line.trim()).map(line => {
-                const values = [];
-                let current = '';
-                let inQuotes = false;
-                
-                for (const char of line) {
-                    if (char === '"') {
-                        inQuotes = !inQuotes;
-                    } else if (char === ',' && !inQuotes) {
-                        values.push(current.trim());
-                        current = '';
-                    } else {
-                        current += char;
-                    }
-                }
-                values.push(current.trim());
+            const lines = csv.split('\n').filter(line => line.trim());
+            if (lines.length === 0) {
+                console.error('CSV is empty');
+                return [];
+            }
+            
+            // Parse header row properly (handle quoted headers)
+            const headers = parseCSVLine(lines[0]);
+            console.log('Parsed headers:', headers.slice(0, 15));
+            
+            return lines.slice(1).map((line, idx) => {
+                const values = parseCSVLine(line);
                 
                 const obj = {};
                 headers.forEach((h, i) => {
@@ -907,6 +903,40 @@
                 });
                 
                 return obj;
+            }).filter(obj => obj['PLAYER']); // Only rows with a player name
+        }
+        
+        // Parse a single CSV line handling quotes
+        function parseCSVLine(line) {
+            const values = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (const char of line) {
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    values.push(current.trim().replace(/^"|"$/g, ''));
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            values.push(current.trim().replace(/^"|"$/g, ''));
+            
+            return values;
+        }
+        
+        // Debug helper
+        function debugPlayer(p, label) {
+            console.log(`${label}:`, {
+                name: getPlayer(p),
+                team: getTeam(p),
+                salary: getSalary(p),
+                parsedSalary: parseSalary(getSalary(p)),
+                status: getStatus(p),
+                normalizedStatus: normalizeStatus(getStatus(p)),
+                capSpace: getCapSpace(p)
             });
         }
         
@@ -1367,18 +1397,44 @@
         // Initialize
         async function init() {
             try {
-                // For demo, use sample data if CSV fails
-                try {
-                    const response = await fetch(CSV_URL);
-                    const csv = await response.text();
-                    allPlayers = parseCSV(csv);
-                } catch (e) {
-                    console.log('Using sample data');
-                    // Sample data for testing
-                    allPlayers = generateSampleData();
+                console.log('Fetching CSV from:', CSV_URL);
+                const response = await fetch(CSV_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
-                calculateDiscoveryFeatures();
+                const csv = await response.text();
+                console.log('CSV loaded, length:', csv.length);
+                console.log('First 500 chars:', csv.substring(0, 500));
+                
+                allPlayers = parseCSV(csv);
+                console.log('Parsed players:', allPlayers.length);
+                
+                // Filter to only players with valid data
+                allPlayers = allPlayers.filter(p => {
+                    const name = getPlayer(p);
+                    const team = getTeam(p);
+                    const salary = parseSalary(getSalary(p));
+                    return name && team && salary > 0;
+                });
+                console.log('Valid players after filter:', allPlayers.length);
+                
+                if (allPlayers.length > 0) {
+                    console.log('Sample player:', allPlayers[0]);
+                    debugPlayer(allPlayers[0], 'First player');
+                    
+                    // Find and debug a Cap Space player
+                    const capSpacePlayer = allPlayers.find(p => normalizeStatus(getStatus(p)) === 'Cap Space');
+                    if (capSpacePlayer) {
+                        debugPlayer(capSpacePlayer, 'Cap Space player');
+                    }
+                    
+                    calculateDiscoveryFeatures();
+                } else {
+                    document.getElementById('hotTargets').innerHTML = '<span class="discovery-tag">No data loaded</span>';
+                }
+                
                 renderLeaderboard();
                 
                 // Check URL for player param
@@ -1390,6 +1446,13 @@
                 
             } catch (error) {
                 console.error('Error loading data:', error);
+                document.getElementById('hotTargets').innerHTML = `<span class="discovery-tag">Error: ${error.message}</span>`;
+                
+                // Fallback to sample data for testing
+                console.log('Falling back to sample data');
+                allPlayers = generateSampleData();
+                calculateDiscoveryFeatures();
+                renderLeaderboard();
             }
         }
         
