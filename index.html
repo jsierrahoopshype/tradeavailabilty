@@ -404,6 +404,11 @@
             font-family: 'SF Mono', Monaco, monospace;
         }
         
+        .rating-cell {
+            font-weight: 600;
+            color: #e74c3c;
+        }
+        
         .status-badge {
             display: inline-block;
             padding: 4px 10px;
@@ -769,6 +774,7 @@
                     <tr>
                         <th data-sort="player">Player ▼</th>
                         <th data-sort="team">Team ▼</th>
+                        <th data-sort="rating">Rating ▼</th>
                         <th data-sort="salary">Salary ▼</th>
                         <th data-sort="status">Status ▼</th>
                         <th data-sort="fit">Fit ▼</th>
@@ -777,7 +783,7 @@
                 </thead>
                 <tbody id="resultsBody">
                     <tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="empty-state">
                                 <div class="icon">🏀</div>
                                 <div>Search for a player to see available trade options</div>
@@ -822,7 +828,7 @@
         let allPlayers = [];
         let selectedPlayer = null;
         let currentResults = [];
-        let sortColumn = 'salary';
+        let sortColumn = 'rating';
         let sortDirection = 'desc';
         let activeFilter = 'all';
         
@@ -898,12 +904,17 @@
                 const values = parseCSVLine(line);
                 
                 const obj = {};
+                // Store by column index (for columns with duplicate names)
+                values.forEach((v, i) => {
+                    obj[`_col${i}`] = v;
+                });
+                // Also store by header name (last value wins for duplicates)
                 headers.forEach((h, i) => {
-                    obj[h] = values[i] || '';
+                    if (h) obj[h] = values[i] || '';
                 });
                 
                 return obj;
-            }).filter(obj => obj['PLAYER']); // Only rows with a player name
+            }).filter(obj => obj._col0); // Only rows with a player name in column 0
         }
         
         // Parse a single CSV line handling quotes
@@ -954,15 +965,16 @@
             return '$' + num.toLocaleString();
         }
         
-        // Normalize column access (handles variations in column names)
-        function getPlayer(p) { return p['PLAYER'] || p['Player'] || ''; }
-        function getTeam(p) { return p['TEAM'] || p['Team'] || ''; }
-        function getSalary(p) { return p['2026'] || p['Salary'] || ''; }
-        function getStatus(p) { return p['TEAM STATUS'] || p['ST 25-26'] || p['Team Status'] || ''; }
-        function getCapSpace(p) { return p['CAP SPACE'] || p['Cap Space'] || ''; }
-        function getRating(p) { return parseFloat(p['RAT 365'] || p['Rating'] || '0') || 0; }
-        function getNoTrade(p) { return p['NO TRADE'] || ''; }
-        function getRestrictions(p) { return p['RESTRICTIONS'] || p['Availability'] || ''; }
+        // Normalize column access - use indices for columns that have duplicates
+        // CSV structure: PLAYER(0), empty(1), TEAM(2), 2026(3), CH 25-26(4), ST 25-26(5), TEAM STATUS(6), CAP SPACE(7), RAT 365(8), NO TRADE(9), RESTRICTIONS(10)
+        function getPlayer(p) { return p._col0 || p['PLAYER'] || p['Player'] || ''; }
+        function getTeam(p) { return p._col2 || p['TEAM'] || p['Team'] || ''; }
+        function getSalary(p) { return p._col3 || p['2026'] || p['Salary'] || ''; }
+        function getStatus(p) { return p._col6 || p['TEAM STATUS'] || p['ST 25-26'] || p['Team Status'] || ''; }
+        function getCapSpace(p) { return p._col7 || p['CAP SPACE'] || p['Cap Space'] || ''; }
+        function getRating(p) { return parseFloat(p._col8 || p['RAT 365'] || p['Rating'] || '0') || 0; }
+        function getNoTrade(p) { return p._col9 || p['NO TRADE'] || ''; }
+        function getRestrictions(p) { return p._col10 || p['RESTRICTIONS'] || p['Availability'] || ''; }
         
         // Get team status class
         function getStatusClass(status) {
@@ -1095,7 +1107,7 @@
             if (matches.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="empty-state">
                                 <div class="icon">😕</div>
                                 <div>No matching trade targets found for this player</div>
@@ -1141,9 +1153,13 @@
                         aVal = a.fitScore;
                         bVal = b.fitScore;
                         break;
+                    case 'rating':
+                        aVal = getRating(a);
+                        bVal = getRating(b);
+                        break;
                     default:
-                        aVal = parseSalary(getSalary(a));
-                        bVal = parseSalary(getSalary(b));
+                        aVal = getRating(a);
+                        bVal = getRating(b);
                 }
                 
                 if (sortDirection === 'asc') {
@@ -1182,11 +1198,11 @@
                             <div class="player-cell">
                                 <span class="name" onclick="searchPlayer('${name.replace(/'/g, "\\'")}')">${name}</span>
                                 ${p.isPerfect ? '<span class="perfect-match-badge">PERFECT MATCH</span>' : ''}
-                                ${rating > 0 ? `<span class="contract-info">Rating: ${rating.toFixed(1)}</span>` : ''}
                             </div>
                             <div class="cba-explainer">${p.cbaExplainer}</div>
                         </td>
                         <td class="team-cell" onclick="showTeam('${team}')">${team}</td>
+                        <td class="rating-cell">${rating > 0 ? rating.toFixed(1) : '-'}</td>
                         <td class="salary-cell">${formatSalary(salary)}</td>
                         <td><span class="status-badge ${getStatusClass(status)}">${status}</span></td>
                         <td>
@@ -1566,7 +1582,7 @@
             currentResults = [];
             document.getElementById('resultsBody').innerHTML = `
                 <tr>
-                    <td colspan="6">
+                    <td colspan="7">
                         <div class="empty-state">
                             <div class="icon">🏀</div>
                             <div>Search for a player to see available trade options</div>
