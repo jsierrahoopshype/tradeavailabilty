@@ -790,7 +790,7 @@
         
         <!-- Leaderboard -->
         <div class="leaderboard-section">
-            <h3>📊 Most Searched This Week</h3>
+            <h3>🕐 Your Recent Searches</h3>
             <div class="leaderboard-items" id="leaderboard">
                 <span style="color: #7f8c8d; font-size: 13px;">Start searching to build the leaderboard</span>
             </div>
@@ -816,7 +816,7 @@
     
     <script>
         // Configuration - Replace with your published Google Sheet CSV URL
-        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg6im6IYB6HXMGzQbmmBnLw9SfQLzxCSo8OfChxlJLhsB6BBC0OwPF_TMch0YgAbtFqYkwDWrsxRe7/pub?gid=0&single=true&output=csv';
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg6im6IYB6HXMGzQbmmBnLw9SfQLzxCSo8OfChxlJLhsB6BBCO0wPF_TMch0YgAbtFqYkwDWrsxRe7/pub?gid=0&single=true&output=csv';
         
         // State
         let allPlayers = [];
@@ -1301,12 +1301,22 @@
             document.getElementById('teamModal').classList.remove('show');
         }
         
+        // Shuffle array helper
+        function shuffleArray(arr) {
+            const shuffled = [...arr];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+        
         // Calculate discovery features
         function calculateDiscoveryFeatures() {
             // Filter to players with actual salaries
             const validPlayers = allPlayers.filter(p => parseSalary(getSalary(p)) > 0);
             
-            // Hot Trade Targets (most possible trade partners)
+            // Hot Trade Targets (most possible trade partners, randomized from top 20)
             const tradeCounts = validPlayers.map(p => ({
                 player: p,
                 count: validPlayers.filter(other => 
@@ -1315,7 +1325,9 @@
                 ).length
             })).sort((a, b) => b.count - a.count);
             
-            const hotTargets = tradeCounts.slice(0, 6).map(t => ({
+            // Take top 20, shuffle, show 6
+            const topTradeTargets = tradeCounts.slice(0, 20);
+            const hotTargets = shuffleArray(topTradeTargets).slice(0, 6).map(t => ({
                 name: getPlayer(t.player),
                 count: t.count
             }));
@@ -1341,7 +1353,8 @@
             }
             
             perfectPairs.sort((a, b) => b.salary - a.salary);
-            const topPerfect = perfectPairs.slice(0, 4);
+            // Take top 15 perfect matches, shuffle, show 4
+            const topPerfect = shuffleArray(perfectPairs.slice(0, 15)).slice(0, 4);
             
             document.getElementById('perfectMatches').innerHTML = topPerfect.map(p => 
                 `<span class="discovery-tag blue" onclick="searchPlayer('${p.p1.replace(/'/g, "\\'")}')">${p.p1} ↔ ${p.p2}</span>`
@@ -1354,14 +1367,14 @@
                     .map(p => getTeam(p))
             )];
             
-            document.getElementById('capHellTeams').innerHTML = capHellTeams.slice(0, 6).map(t => 
+            // Shuffle cap hell teams
+            document.getElementById('capHellTeams').innerHTML = shuffleArray(capHellTeams).slice(0, 6).map(t => 
                 `<span class="discovery-tag orange" onclick="showTeam('${t}')">${t}</span>`
             ).join('') || '<span class="discovery-tag orange">None</span>';
             
-            // Trade Machine Picks (balanced 2-player swaps with similar salaries)
-            const tradePicks = perfectPairs
-                .filter(p => p.salary > 10000000) // Only notable salaries
-                .slice(0, 4);
+            // Trade Machine Picks (balanced 2-player swaps with similar salaries, randomized)
+            const notablePerfectPairs = perfectPairs.filter(p => p.salary > 10000000);
+            const tradePicks = shuffleArray(notablePerfectPairs).slice(0, 4);
             
             document.getElementById('tradePicks').innerHTML = tradePicks.map(p => 
                 `<span class="discovery-tag green" onclick="searchPlayer('${p.p1.replace(/'/g, "\\'")}')">${p.p1} for ${p.p2}</span>`
