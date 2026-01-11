@@ -666,7 +666,7 @@
             </div>
             <div class="selected-player-stats">
                 <div class="stat-box">
-                    <div class="label">Salary</div>
+                    <div class="label" id="salaryLabel">Salary</div>
                     <div class="value" id="selectedSalary"></div>
                 </div>
                 <div class="stat-box">
@@ -678,7 +678,7 @@
                     <div class="value" id="selectedCapSpace"></div>
                 </div>
                 <div class="stat-box">
-                    <div class="label">Trade Matches</div>
+                    <div class="label" id="matchesLabel">Trade Matches</div>
                     <div class="value" id="selectedMatches"></div>
                 </div>
             </div>
@@ -691,7 +691,7 @@
         <div class="results-section">
             <div class="results-header">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <span class="results-title">Available Trade Targets</span>
+                    <span class="results-title" id="resultsTitle">Available Trade Targets</span>
                     <span class="results-count" id="resultsCount">0</span>
                 </div>
                 <div class="filter-tabs">
@@ -1082,9 +1082,12 @@
             document.getElementById('selectedName').onclick = () => searchPlayer(name);
             document.getElementById('selectedTeam').textContent = team;
             document.getElementById('selectedTeam').onclick = () => showTeam(team);
+            document.getElementById('salaryLabel').textContent = 'Salary';
             document.getElementById('selectedSalary').textContent = formatSalary(salary);
             document.getElementById('selectedStatus').textContent = status;
             document.getElementById('selectedCapSpace').textContent = normalizeStatus(status) === 'Cap Space' ? formatSalary(capSpace) : 'N/A';
+            document.getElementById('matchesLabel').textContent = 'Trade Matches';
+            document.getElementById('resultsTitle').textContent = 'Available Trade Targets';
             
             const matches = findMatches(player);
             currentResults = matches;
@@ -1126,6 +1129,7 @@
         }
         
         // Show team modal
+        // Show team roster in main results (no modal)
         function showTeam(teamName) {
             const roster = allPlayers.filter(p => 
                 getTeam(p) === teamName
@@ -1141,23 +1145,70 @@
             const status = getStatus(roster[0]);
             const capSpace = parseSalary(getCapSpace(roster[0]));
             
-            document.getElementById('modalTeamName').textContent = teamName;
-            document.getElementById('modalTeamStatus').textContent = 
-                `${status}${normalizeStatus(status) === 'Cap Space' ? ` • ${formatSalary(capSpace)} available` : ''}`;
+            // Update header to show team info
+            document.getElementById('selectedName').textContent = teamName;
+            document.getElementById('selectedName').onclick = null;
+            document.getElementById('selectedTeam').textContent = 'Team Roster';
+            document.getElementById('selectedTeam').onclick = null;
+            document.getElementById('salaryLabel').textContent = 'Total Salary';
+            document.getElementById('selectedSalary').textContent = formatSalary(roster.reduce((sum, p) => sum + parseSalary(getSalary(p)), 0));
+            document.getElementById('selectedStatus').textContent = status;
+            document.getElementById('selectedCapSpace').textContent = normalizeStatus(status) === 'Cap Space' ? formatSalary(capSpace) : 'N/A';
+            document.getElementById('matchesLabel').textContent = 'Players';
+            document.getElementById('selectedMatches').textContent = roster.length;
+            document.getElementById('selectedPlayer').classList.add('show');
+            document.getElementById('tradeWarning').style.display = 'none';
+            document.getElementById('resultsTitle').textContent = 'Team Roster';
             
-            document.getElementById('modalRoster').innerHTML = roster.map(p => {
+            // Update search box
+            document.getElementById('playerSearch').value = teamName;
+            document.getElementById('clearBtn').style.display = 'block';
+            document.getElementById('autocomplete').style.display = 'none';
+            
+            // Render roster in results table
+            const tbody = document.getElementById('resultsBody');
+            document.getElementById('resultsCount').textContent = roster.length;
+            
+            tbody.innerHTML = roster.map(p => {
                 const name = getPlayer(p);
+                const team = getTeam(p);
                 const salary = parseSalary(getSalary(p));
+                const playerStatus = getStatus(p);
+                const restrictions = getRestrictions(p);
+                const noTrade = getNoTrade(p);
                 const rating = getRating(p);
+                
+                let availText = 'Available';
+                let availClass = 'available';
+                if (noTrade === 'YES') {
+                    availText = 'No-Trade Clause';
+                    availClass = 'unavailable';
+                } else if (restrictions) {
+                    availText = `Until ${restrictions}`;
+                    availClass = 'restricted';
+                }
+                
                 return `
-                    <div class="roster-player" onclick="closeModal(); searchPlayer('${name.replace(/'/g, "\\'")}')">
-                        <span class="name">${name}</span>
-                        <span class="salary">${formatSalary(salary)}${rating > 0 ? ` • ${rating.toFixed(1)}` : ''}</span>
-                    </div>
+                    <tr>
+                        <td>
+                            <div class="player-cell">
+                                <span class="name" onclick="searchPlayer('${name.replace(/'/g, "\\'")}')">${name}</span>
+                            </div>
+                        </td>
+                        <td class="team-cell" onclick="showTeam('${team}')">${team}</td>
+                        <td class="rating-cell">${rating > 0 ? rating.toFixed(1) : '-'}</td>
+                        <td class="salary-cell">${formatSalary(salary)}</td>
+                        <td><span class="status-badge ${getStatusClass(playerStatus)}">${playerStatus}</span></td>
+                        <td><span class="availability-badge ${availClass}">${availText}</span></td>
+                    </tr>
                 `;
             }).join('');
             
-            document.getElementById('teamModal').classList.add('show');
+            // Update URL
+            const url = new URL(window.location);
+            url.searchParams.set('team', teamName);
+            url.searchParams.delete('player');
+            window.history.pushState({}, '', url);
         }
         
         function closeModal() {
@@ -1322,12 +1373,15 @@
                 
                 renderLeaderboard();
                 
-                // Check URL for player param, otherwise load a random trade rumor player (or highest rated)
+                // Check URL for player or team param, otherwise load a random trade rumor player (or highest rated)
                 const urlParams = new URLSearchParams(window.location.search);
                 const playerParam = urlParams.get('player');
+                const teamParam = urlParams.get('team');
                 
                 if (playerParam) {
                     searchPlayer(playerParam);
+                } else if (teamParam) {
+                    showTeam(teamParam);
                 } else {
                     // Try to auto-load a player
                     let playerToLoad = null;
