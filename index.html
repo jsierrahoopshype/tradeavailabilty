@@ -327,15 +327,6 @@
             border-color: #e74c3c;
         }
         
-        .filter-tab.perfect {
-            border-color: #27ae60;
-        }
-        
-        .filter-tab.perfect:hover, .filter-tab.perfect.active {
-            background: #27ae60;
-            border-color: #27ae60;
-        }
-        
         /* Results Table */
         .results-table {
             width: 100%;
@@ -423,40 +414,6 @@
         .status-badge.first-apron { background: #f8d7da; color: #721c24; }
         .status-badge.second-apron { background: #721c24; color: white; }
         
-        .fit-score {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .fit-bar {
-            width: 60px;
-            height: 6px;
-            background: #e0e0e0;
-            border-radius: 3px;
-            overflow: hidden;
-        }
-        
-        .fit-bar-fill {
-            height: 100%;
-            border-radius: 3px;
-            transition: width 0.3s;
-        }
-        
-        .fit-bar-fill.high { background: #27ae60; }
-        .fit-bar-fill.medium { background: #f39c12; }
-        .fit-bar-fill.low { background: #e74c3c; }
-        
-        .cba-explainer {
-            font-size: 11px;
-            color: #7f8c8d;
-            background: #f8f9fa;
-            padding: 8px 12px;
-            border-radius: 6px;
-            margin-top: 6px;
-            border-left: 3px solid #1976d2;
-        }
-        
         .availability-badge {
             font-size: 11px;
             padding: 3px 8px;
@@ -466,16 +423,6 @@
         .availability-badge.available { background: #d4edda; color: #155724; }
         .availability-badge.restricted { background: #fff3cd; color: #856404; }
         .availability-badge.unavailable { background: #f8d7da; color: #721c24; }
-        
-        .perfect-match-badge {
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-            color: white;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-size: 10px;
-            font-weight: 600;
-            margin-left: 8px;
-        }
         
         /* Team Modal */
         .modal-overlay {
@@ -928,18 +875,6 @@
         }
         
         // Debug helper
-        function debugPlayer(p, label) {
-            console.log(`${label}:`, {
-                name: getPlayer(p),
-                team: getTeam(p),
-                salary: getSalary(p),
-                parsedSalary: parseSalary(getSalary(p)),
-                status: getStatus(p),
-                normalizedStatus: normalizeStatus(getStatus(p)),
-                capSpace: getCapSpace(p)
-            });
-        }
-        
         // Parse salary string to number
         function parseSalary(str) {
             if (!str) return 0;
@@ -1018,61 +953,6 @@
             return salary2 <= max1CanReceive && salary1 <= max2CanReceive;
         }
         
-        // Generate CBA explainer
-        function getCBAExplainer(fromPlayer, toPlayer) {
-            const fromSalary = parseSalary(getSalary(fromPlayer));
-            const toSalary = parseSalary(getSalary(toPlayer));
-            const toStatus = normalizeStatus(getStatus(toPlayer));
-            const toTeam = getTeam(toPlayer);
-            const rules = CBA_RULES[toStatus];
-            
-            if (!rules) return '';
-            
-            if (rules.usesCapSpace) {
-                const capSpace = parseSalary(getCapSpace(toPlayer));
-                return `${toTeam} can absorb using ${formatSalary(capSpace)} cap space + ${formatSalary(toSalary)} outgoing`;
-            }
-            
-            const maxReceive = toSalary * rules.multiplier + rules.bonus;
-            const percentage = Math.round(rules.multiplier * 100);
-            return `${percentage}% of ${formatSalary(toSalary)} = ${formatSalary(maxReceive)} max incoming`;
-        }
-        
-        // Calculate fit score (simple algorithm)
-        function calculateFitScore(fromPlayer, toPlayer) {
-            let score = 50;
-            
-            const salaryDiff = Math.abs(
-                parseSalary(getSalary(fromPlayer)) - 
-                parseSalary(getSalary(toPlayer))
-            );
-            
-            // Closer salaries = better fit
-            if (salaryDiff < 1000000) score += 30;
-            else if (salaryDiff < 5000000) score += 20;
-            else if (salaryDiff < 10000000) score += 10;
-            
-            // Available players get bonus (no restrictions)
-            const restrictions = getRestrictions(toPlayer);
-            if (!restrictions) score += 20;
-            
-            // Higher rated players get bonus
-            const rating = getRating(toPlayer);
-            if (rating >= 10) score += 10;
-            else if (rating >= 5) score += 5;
-            
-            return Math.min(100, Math.max(0, score));
-        }
-        
-        // Check if perfect salary match (within 5%)
-        function isPerfectMatch(player1, player2) {
-            const s1 = parseSalary(getSalary(player1));
-            const s2 = parseSalary(getSalary(player2));
-            if (s1 === 0 || s2 === 0) return false;
-            const diff = Math.abs(s1 - s2);
-            return diff / Math.max(s1, s2) < 0.05;
-        }
-        
         // Find trade matches for a player
         function findMatches(player) {
             const team = getTeam(player);
@@ -1080,11 +960,7 @@
             return allPlayers
                 .filter(p => getTeam(p) !== team)
                 .filter(p => parseSalary(getSalary(p)) > 0) // Must have salary
-                .filter(p => canTrade(player, p))
-                .map(p => ({
-                    ...p,
-                    cbaExplainer: getCBAExplainer(player, p)
-                }));
+                .filter(p => canTrade(player, p));
         }
         
         // Render results
@@ -1179,7 +1055,6 @@
                             <div class="player-cell">
                                 <span class="name" onclick="searchPlayer('${name.replace(/'/g, "\\'")}')">${name}</span>
                             </div>
-                            <div class="cba-explainer">${p.cbaExplainer}</div>
                         </td>
                         <td class="team-cell" onclick="showTeam('${team}')">${team}</td>
                         <td class="rating-cell">${rating > 0 ? rating.toFixed(1) : '-'}</td>
@@ -1304,7 +1179,7 @@
             // Filter to players with actual salaries
             const validPlayers = allPlayers.filter(p => parseSalary(getSalary(p)) > 0);
             
-            // Hot Trade Targets - only show players from Trade Rumor Rankings
+            // Hot Trade Targets - show players from Trade Rumor Rankings
             if (tradeRumorPlayers.length > 0) {
                 // Match trade rumor names to our player data
                 const rumorPlayersWithData = tradeRumorPlayers
@@ -1312,25 +1187,18 @@
                         const player = validPlayers.find(p => 
                             getPlayer(p).toLowerCase() === rumorName.toLowerCase()
                         );
-                        if (player) {
-                            const count = validPlayers.filter(other => 
-                                getTeam(other) !== getTeam(player) && 
-                                canTrade(player, other)
-                            ).length;
-                            return { name: getPlayer(player), count };
-                        }
-                        return null;
+                        return player ? getPlayer(player) : null;
                     })
-                    .filter(p => p !== null);
+                    .filter(name => name !== null);
                 
                 // Shuffle and show 6
                 const hotTargets = shuffleArray(rumorPlayersWithData).slice(0, 6);
                 
-                document.getElementById('hotTargets').innerHTML = hotTargets.map(h => 
-                    `<span class="discovery-tag" onclick="searchPlayer('${h.name.replace(/'/g, "\\'")}')">${h.name} (${h.count})</span>`
+                document.getElementById('hotTargets').innerHTML = hotTargets.map(name => 
+                    `<span class="discovery-tag" onclick="searchPlayer('${name.replace(/'/g, "\\'")}')">${name}</span>`
                 ).join('') || '<span class="discovery-tag">No trade rumors found</span>';
             } else {
-                document.getElementById('hotTargets').innerHTML = '<span class="discovery-tag">Loading trade rumors...</span>';
+                document.getElementById('hotTargets').innerHTML = '<span class="discovery-tag">No trade rumors found</span>';
             }
             
             // Randomly show Cap Hell OR Cap Paradise
@@ -1369,28 +1237,6 @@
             }
         }
         
-        // Load trade rumors from GitHub
-        async function loadTradeRumors() {
-            try {
-                const response = await fetch(TRADE_RUMORS_URL);
-                if (!response.ok) throw new Error('Failed to load trade rumors');
-                const csv = await response.text();
-                
-                // Parse the CSV - assume first column is player name
-                const lines = csv.split('\n').filter(line => line.trim());
-                // Skip header, extract player names (first column)
-                tradeRumorPlayers = lines.slice(1).map(line => {
-                    const firstComma = line.indexOf(',');
-                    return firstComma > 0 ? line.substring(0, firstComma).trim().replace(/"/g, '') : line.trim();
-                }).filter(name => name);
-                
-                console.log('Loaded trade rumor players:', tradeRumorPlayers.length);
-            } catch (error) {
-                console.error('Error loading trade rumors:', error);
-                tradeRumorPlayers = [];
-            }
-        }
-        
         // Share functionality
         function shareResults() {
             if (!selectedPlayer) return;
@@ -1420,19 +1266,18 @@
         // Initialize
         async function init() {
             try {
-                console.log('Fetching CSV from:', CSV_URL);
-                const response = await fetch(CSV_URL);
+                // Load both CSVs in parallel for speed
+                const [mainResponse, rumorsResponse] = await Promise.all([
+                    fetch(CSV_URL),
+                    fetch(TRADE_RUMORS_URL).catch(() => null)
+                ]);
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                if (!mainResponse.ok) {
+                    throw new Error(`HTTP ${mainResponse.status}`);
                 }
                 
-                const csv = await response.text();
-                console.log('CSV loaded, length:', csv.length);
-                console.log('First 500 chars:', csv.substring(0, 500));
-                
+                const csv = await mainResponse.text();
                 allPlayers = parseCSV(csv);
-                console.log('Parsed players:', allPlayers.length);
                 
                 // Filter to only players with valid data
                 allPlayers = allPlayers.filter(p => {
@@ -1441,95 +1286,44 @@
                     const salary = parseSalary(getSalary(p));
                     return name && team && salary > 0;
                 });
-                console.log('Valid players after filter:', allPlayers.length);
+                
+                // Parse trade rumors if loaded
+                if (rumorsResponse && rumorsResponse.ok) {
+                    const rumorsCsv = await rumorsResponse.text();
+                    const lines = rumorsCsv.split('\n').filter(line => line.trim());
+                    tradeRumorPlayers = lines.slice(1).map(line => {
+                        const firstComma = line.indexOf(',');
+                        return firstComma > 0 ? line.substring(0, firstComma).trim().replace(/"/g, '') : line.trim();
+                    }).filter(name => name);
+                }
                 
                 if (allPlayers.length > 0) {
-                    console.log('Sample player:', allPlayers[0]);
-                    debugPlayer(allPlayers[0], 'First player');
-                    
-                    // Find and debug a Cap Space player
-                    const capSpacePlayer = allPlayers.find(p => normalizeStatus(getStatus(p)) === 'Cap Space');
-                    if (capSpacePlayer) {
-                        debugPlayer(capSpacePlayer, 'Cap Space player');
-                    }
-                    
-                    // Load trade rumors then calculate discovery features
-                    await loadTradeRumors();
                     calculateDiscoveryFeatures();
-                } else {
-                    document.getElementById('hotTargets').innerHTML = '<span class="discovery-tag">No data loaded</span>';
                 }
                 
                 renderLeaderboard();
                 
-                // Check URL for player param
+                // Check URL for player param, otherwise load a random trade rumor player
                 const urlParams = new URLSearchParams(window.location.search);
                 const playerParam = urlParams.get('player');
+                
                 if (playerParam) {
                     searchPlayer(playerParam);
+                } else if (tradeRumorPlayers.length > 0) {
+                    // Find a random trade rumor player that exists in our data
+                    const validRumorPlayers = tradeRumorPlayers.filter(name => 
+                        allPlayers.some(p => getPlayer(p).toLowerCase() === name.toLowerCase())
+                    );
+                    if (validRumorPlayers.length > 0) {
+                        const randomPlayer = validRumorPlayers[Math.floor(Math.random() * validRumorPlayers.length)];
+                        searchPlayer(randomPlayer);
+                    }
                 }
                 
             } catch (error) {
                 console.error('Error loading data:', error);
-                document.getElementById('hotTargets').innerHTML = `<span class="discovery-tag">Error: ${error.message}</span>`;
-                
-                // Fallback to sample data for testing
-                console.log('Falling back to sample data');
-                allPlayers = generateSampleData();
-                calculateDiscoveryFeatures();
-                renderLeaderboard();
+                document.getElementById('hotTargets').innerHTML = `<span class="discovery-tag">Error loading data</span>`;
             }
-        }
-        
-        // Sample data generator for testing
-        function generateSampleData() {
-            const teams = [
-                { name: 'Lakers', status: '1st Apron' },
-                { name: 'Celtics', status: 'Tax Team' },
-                { name: 'Warriors', status: '2nd Apron' },
-                { name: 'Heat', status: 'Below Tax' },
-                { name: 'Nuggets', status: 'Tax Team' },
-                { name: 'Bucks', status: '1st Apron' },
-                { name: 'Suns', status: '2nd Apron' },
-                { name: 'Thunder', status: 'Cap Space', capSpace: 15000000 },
-                { name: 'Spurs', status: 'Cap Space', capSpace: 30000000 },
-                { name: 'Pistons', status: 'Cap Space', capSpace: 25000000 }
-            ];
-            
-            const players = [
-                { name: 'LeBron James', team: 'Lakers', salary: 47607350 },
-                { name: 'Anthony Davis', team: 'Lakers', salary: 43219440 },
-                { name: 'Austin Reaves', team: 'Lakers', salary: 12016854 },
-                { name: 'Jayson Tatum', team: 'Celtics', salary: 34848340 },
-                { name: 'Jaylen Brown', team: 'Celtics', salary: 49205800 },
-                { name: 'Stephen Curry', team: 'Warriors', salary: 55761216 },
-                { name: 'Draymond Green', team: 'Warriors', salary: 22300000 },
-                { name: 'Jimmy Butler', team: 'Heat', salary: 48798677 },
-                { name: 'Bam Adebayo', team: 'Heat', salary: 34848340 },
-                { name: 'Nikola Jokic', team: 'Nuggets', salary: 51415938 },
-                { name: 'Jamal Murray', team: 'Nuggets', salary: 33833400 },
-                { name: 'Giannis Antetokounmpo', team: 'Bucks', salary: 48787676 },
-                { name: 'Damian Lillard', team: 'Bucks', salary: 45640084 },
-                { name: 'Kevin Durant', team: 'Suns', salary: 51179021 },
-                { name: 'Devin Booker', team: 'Suns', salary: 36016200 },
-                { name: 'Bradley Beal', team: 'Suns', salary: 46741590 },
-                { name: 'Shai Gilgeous-Alexander', team: 'Thunder', salary: 35000000 },
-                { name: 'Chet Holmgren', team: 'Thunder', salary: 10875720 },
-                { name: 'Victor Wembanyama', team: 'Spurs', salary: 12200880 },
-                { name: 'Cade Cunningham', team: 'Pistons', salary: 10050120 }
-            ];
-            
-            return players.map(p => {
-                const teamInfo = teams.find(t => t.name === p.team);
-                return {
-                    'PLAYER': p.name,
-                    'TEAM': p.team,
-                    '2026': '$' + p.salary.toLocaleString(),
-                    'ST 25-26': teamInfo.status,
-                    'Cap Space': teamInfo.capSpace ? '$' + teamInfo.capSpace.toLocaleString() : '',
-                    'Availability': 'Available'
-                };
-            });
         }
         
         // Event Listeners
