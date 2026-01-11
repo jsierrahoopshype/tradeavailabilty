@@ -1179,10 +1179,12 @@
             // Filter to players with actual salaries
             const validPlayers = allPlayers.filter(p => parseSalary(getSalary(p)) > 0);
             
-            // Hot Trade Targets - show players from Trade Rumor Rankings
+            // Hot Trade Targets - show players from Trade Rumor Rankings (or fallback to highest rated)
+            let hotTargetNames = [];
+            
             if (tradeRumorPlayers.length > 0) {
                 // Match trade rumor names to our player data
-                const rumorPlayersWithData = tradeRumorPlayers
+                hotTargetNames = tradeRumorPlayers
                     .map(rumorName => {
                         const player = validPlayers.find(p => 
                             getPlayer(p).toLowerCase() === rumorName.toLowerCase()
@@ -1190,22 +1192,27 @@
                         return player ? getPlayer(player) : null;
                     })
                     .filter(name => name !== null);
-                
-                // Shuffle and show 6
-                const hotTargets = shuffleArray(rumorPlayersWithData).slice(0, 6);
-                
-                document.getElementById('hotTargets').innerHTML = hotTargets.map(name => 
-                    `<span class="discovery-tag" onclick="searchPlayer('${name.replace(/'/g, "\\'")}')">${name}</span>`
-                ).join('') || '<span class="discovery-tag">No trade rumors found</span>';
-            } else {
-                document.getElementById('hotTargets').innerHTML = '<span class="discovery-tag">No trade rumors found</span>';
             }
+            
+            // Fallback: if no trade rumors loaded, use highest rated players
+            if (hotTargetNames.length === 0) {
+                const topRated = [...validPlayers]
+                    .sort((a, b) => getRating(b) - getRating(a))
+                    .slice(0, 20);
+                hotTargetNames = topRated.map(p => getPlayer(p));
+            }
+            
+            // Shuffle and show 6
+            const hotTargets = shuffleArray(hotTargetNames).slice(0, 6);
+            
+            document.getElementById('hotTargets').innerHTML = hotTargets.map(name => 
+                `<span class="discovery-tag" onclick="searchPlayer('${name.replace(/'/g, "\\'")}')">${name}</span>`
+            ).join('') || '<span class="discovery-tag">Loading...</span>';
             
             // Randomly show Cap Hell OR Cap Paradise
             const showCapHell = Math.random() > 0.5;
             
             if (showCapHell) {
-                // Cap Hell Teams (2nd Apron)
                 document.getElementById('capTeamsTitle').innerHTML = '🚨 Cap Hell Teams';
                 document.getElementById('capTeamsCard').classList.remove('green');
                 document.getElementById('capTeamsCard').classList.add('orange');
@@ -1220,7 +1227,6 @@
                     `<span class="discovery-tag orange" onclick="showTeam('${t}')">${t}</span>`
                 ).join('') || '<span class="discovery-tag orange">None</span>';
             } else {
-                // Cap Paradise Teams (Cap Space)
                 document.getElementById('capTeamsTitle').innerHTML = '🌴 Cap Paradise Teams';
                 document.getElementById('capTeamsCard').classList.remove('orange');
                 document.getElementById('capTeamsCard').classList.add('green');
@@ -1269,7 +1275,7 @@
                 // Load both CSVs in parallel for speed
                 const [mainResponse, rumorsResponse] = await Promise.all([
                     fetch(CSV_URL),
-                    fetch(TRADE_RUMORS_URL).catch(() => null)
+                    fetch(TRADE_RUMORS_URL).catch(e => { console.log('Trade rumors fetch failed:', e); return null; })
                 ]);
                 
                 if (!mainResponse.ok) {
@@ -1277,7 +1283,10 @@
                 }
                 
                 const csv = await mainResponse.text();
+                console.log('Main CSV loaded, length:', csv.length);
+                
                 allPlayers = parseCSV(csv);
+                console.log('Parsed players:', allPlayers.length);
                 
                 // Filter to only players with valid data
                 allPlayers = allPlayers.filter(p => {
@@ -1286,37 +1295,70 @@
                     const salary = parseSalary(getSalary(p));
                     return name && team && salary > 0;
                 });
+                console.log('Valid players after filter:', allPlayers.length);
                 
                 // Parse trade rumors if loaded
                 if (rumorsResponse && rumorsResponse.ok) {
                     const rumorsCsv = await rumorsResponse.text();
+                    console.log('Trade rumors CSV loaded, length:', rumorsCsv.length);
                     const lines = rumorsCsv.split('\n').filter(line => line.trim());
+                    // CSV format: date,player,team,source,snippet,url,title
+                    // Player name is in second column (index 1)
                     tradeRumorPlayers = lines.slice(1).map(line => {
-                        const firstComma = line.indexOf(',');
-                        return firstComma > 0 ? line.substring(0, firstComma).trim().replace(/"/g, '') : line.trim();
+                        const cols = line.split(',');
+                        return cols[1] ? cols[1].trim().replace(/"/g, '') : '';
                     }).filter(name => name);
+                    // Remove duplicates
+                    tradeRumorPlayers = [...new Set(tradeRumorPlayers)];
+                    console.log('Parsed trade rumor players:', tradeRumorPlayers.length, tradeRumorPlayers.slice(0, 5));
+                } else {
+                    console.log('Trade rumors not loaded, using fallback');
                 }
                 
                 if (allPlayers.length > 0) {
+                    console.log('Sample player:', getPlayer(allPlayers[0]), getTeam(allPlayers[0]));
                     calculateDiscoveryFeatures();
                 }
                 
                 renderLeaderboard();
                 
-                // Check URL for player param, otherwise load a random trade rumor player
+                // Check URL for player param, otherwise load a random trade rumor player (or highest rated)
                 const urlParams = new URLSearchParams(window.location.search);
                 const playerParam = urlParams.get('player');
                 
                 if (playerParam) {
                     searchPlayer(playerParam);
-                } else if (tradeRumorPlayers.length > 0) {
-                    // Find a random trade rumor player that exists in our data
-                    const validRumorPlayers = tradeRumorPlayers.filter(name => 
-                        allPlayers.some(p => getPlayer(p).toLowerCase() === name.toLowerCase())
-                    );
-                    if (validRumorPlayers.length > 0) {
-                        const randomPlayer = validRumorPlayers[Math.floor(Math.random() * validRumorPlayers.length)];
-                        searchPlayer(randomPlayer);
+                } else {
+                    // Try to auto-load a player
+                    let playerToLoad = null;
+                    
+                    // First try trade rumor players
+                    if (tradeRumorPlayers.length > 0) {
+                        const validRumorPlayers = tradeRumorPlayers.filter(name => 
+                            allPlayers.some(p => getPlayer(p).toLowerCase() === name.toLowerCase())
+                        );
+                        if (validRumorPlayers.length > 0) {
+                            playerToLoad = validRumorPlayers[Math.floor(Math.random() * validRumorPlayers.length)];
+                        }
+                    }
+                    
+                    // Fallback to highest rated player
+                    if (!playerToLoad && allPlayers.length > 0) {
+                        const topRated = [...allPlayers]
+                            .filter(p => parseSalary(getSalary(p)) > 0)
+                            .sort((a, b) => getRating(b) - getRating(a));
+                        if (topRated.length > 0) {
+                            // Pick randomly from top 10 rated
+                            const top10 = topRated.slice(0, 10);
+                            playerToLoad = getPlayer(top10[Math.floor(Math.random() * top10.length)]);
+                        }
+                    }
+                    
+                    if (playerToLoad) {
+                        console.log('Auto-loading player:', playerToLoad);
+                        searchPlayer(playerToLoad);
+                    } else {
+                        console.log('No player to auto-load');
                     }
                 }
                 
