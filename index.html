@@ -691,24 +691,10 @@
                 </div>
             </div>
             
-            <div class="discovery-card blue" id="perfectMatchesCard">
-                <h3>💎 Perfect Salary Matches</h3>
-                <div class="items" id="perfectMatches">
-                    <span class="discovery-tag blue">Loading...</span>
-                </div>
-            </div>
-            
-            <div class="discovery-card orange" id="capHellCard">
-                <h3>🚨 Cap Hell Teams</h3>
-                <div class="items" id="capHellTeams">
+            <div class="discovery-card orange" id="capTeamsCard">
+                <h3 id="capTeamsTitle">🚨 Cap Hell Teams</h3>
+                <div class="items" id="capTeams">
                     <span class="discovery-tag orange">Loading...</span>
-                </div>
-            </div>
-            
-            <div class="discovery-card green" id="tradePicksCard">
-                <h3>🎯 Trade Machine Picks</h3>
-                <div class="items" id="tradePicks">
-                    <span class="discovery-tag green">Loading...</span>
                 </div>
             </div>
         </div>
@@ -763,9 +749,7 @@
                 </div>
                 <div class="filter-tabs">
                     <button class="filter-tab active" data-filter="all">All</button>
-                    <button class="filter-tab perfect" data-filter="perfect">💎 Perfect</button>
                     <button class="filter-tab" data-filter="available">✓ Available</button>
-                    <button class="filter-tab" data-filter="high-fit">High Fit</button>
                 </div>
             </div>
             
@@ -776,14 +760,13 @@
                         <th data-sort="team">Team ▼</th>
                         <th data-sort="rating">Rating ▼</th>
                         <th data-sort="salary">Salary ▼</th>
-                        <th data-sort="status">Status ▼</th>
-                        <th data-sort="fit">Fit ▼</th>
+                        <th data-sort="status">Team Status ▼</th>
                         <th>Availability</th>
                     </tr>
                 </thead>
                 <tbody id="resultsBody">
                     <tr>
-                        <td colspan="7">
+                        <td colspan="6">
                             <div class="empty-state">
                                 <div class="icon">🏀</div>
                                 <div>Search for a player to see available trade options</div>
@@ -823,6 +806,12 @@
     <script>
         // Configuration - Replace with your published Google Sheet CSV URL
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg6im6IYB6HXMGzQbmmBnLw9SfQLzxCSo8OfChxlJLhsB6BBCO0wPF_TMch0YgAbtFqYkwDWrsxRe7/pub?gid=0&single=true&output=csv';
+        
+        // Trade Rumors CSV from GitHub
+        const TRADE_RUMORS_URL = 'https://raw.githubusercontent.com/jsierrahoopshype/nba-trade-rumor-rankings/main/trade_rumors.csv';
+        
+        // Trade rumor players (loaded from CSV)
+        let tradeRumorPlayers = [];
         
         // State
         let allPlayers = [];
@@ -1094,8 +1083,6 @@
                 .filter(p => canTrade(player, p))
                 .map(p => ({
                     ...p,
-                    fitScore: calculateFitScore(player, p),
-                    isPerfect: isPerfectMatch(player, p),
                     cbaExplainer: getCBAExplainer(player, p)
                 }));
         }
@@ -1107,7 +1094,7 @@
             if (matches.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7">
+                        <td colspan="6">
                             <div class="empty-state">
                                 <div class="icon">😕</div>
                                 <div>No matching trade targets found for this player</div>
@@ -1121,12 +1108,8 @@
             
             // Apply filter
             let filtered = matches;
-            if (activeFilter === 'perfect') {
-                filtered = matches.filter(m => m.isPerfect);
-            } else if (activeFilter === 'available') {
+            if (activeFilter === 'available') {
                 filtered = matches.filter(m => !getRestrictions(m) && !getNoTrade(m));
-            } else if (activeFilter === 'high-fit') {
-                filtered = matches.filter(m => m.fitScore >= 70);
             }
             
             // Sort
@@ -1179,8 +1162,6 @@
                 const noTrade = getNoTrade(p);
                 const rating = getRating(p);
                 
-                const fitLevel = p.fitScore >= 70 ? 'high' : p.fitScore >= 40 ? 'medium' : 'low';
-                
                 // Determine availability status
                 let availText = 'Available';
                 let availClass = 'available';
@@ -1197,7 +1178,6 @@
                         <td>
                             <div class="player-cell">
                                 <span class="name" onclick="searchPlayer('${name.replace(/'/g, "\\'")}')">${name}</span>
-                                ${p.isPerfect ? '<span class="perfect-match-badge">PERFECT MATCH</span>' : ''}
                             </div>
                             <div class="cba-explainer">${p.cbaExplainer}</div>
                         </td>
@@ -1205,14 +1185,6 @@
                         <td class="rating-cell">${rating > 0 ? rating.toFixed(1) : '-'}</td>
                         <td class="salary-cell">${formatSalary(salary)}</td>
                         <td><span class="status-badge ${getStatusClass(status)}">${status}</span></td>
-                        <td>
-                            <div class="fit-score">
-                                <div class="fit-bar">
-                                    <div class="fit-bar-fill ${fitLevel}" style="width: ${p.fitScore}%"></div>
-                                </div>
-                                <span>${p.fitScore}</span>
-                            </div>
-                        </td>
                         <td><span class="availability-badge ${availClass}">${availText}</span></td>
                     </tr>
                 `;
@@ -1332,69 +1304,91 @@
             // Filter to players with actual salaries
             const validPlayers = allPlayers.filter(p => parseSalary(getSalary(p)) > 0);
             
-            // Hot Trade Targets (most possible trade partners, randomized from top 20)
-            const tradeCounts = validPlayers.map(p => ({
-                player: p,
-                count: validPlayers.filter(other => 
-                    getTeam(other) !== getTeam(p) && 
-                    canTrade(p, other)
-                ).length
-            })).sort((a, b) => b.count - a.count);
-            
-            // Take top 20, shuffle, show 6
-            const topTradeTargets = tradeCounts.slice(0, 20);
-            const hotTargets = shuffleArray(topTradeTargets).slice(0, 6).map(t => ({
-                name: getPlayer(t.player),
-                count: t.count
-            }));
-            
-            document.getElementById('hotTargets').innerHTML = hotTargets.map(h => 
-                `<span class="discovery-tag" onclick="searchPlayer('${h.name.replace(/'/g, "\\'")}')">${h.name} (${h.count})</span>`
-            ).join('');
-            
-            // Perfect Salary Matches
-            const perfectPairs = [];
-            for (let i = 0; i < validPlayers.length; i++) {
-                for (let j = i + 1; j < validPlayers.length; j++) {
-                    if (getTeam(validPlayers[i]) !== getTeam(validPlayers[j])) {
-                        if (isPerfectMatch(validPlayers[i], validPlayers[j]) && canTrade(validPlayers[i], validPlayers[j])) {
-                            perfectPairs.push({
-                                p1: getPlayer(validPlayers[i]),
-                                p2: getPlayer(validPlayers[j]),
-                                salary: parseSalary(getSalary(validPlayers[i]))
-                            });
+            // Hot Trade Targets - only show players from Trade Rumor Rankings
+            if (tradeRumorPlayers.length > 0) {
+                // Match trade rumor names to our player data
+                const rumorPlayersWithData = tradeRumorPlayers
+                    .map(rumorName => {
+                        const player = validPlayers.find(p => 
+                            getPlayer(p).toLowerCase() === rumorName.toLowerCase()
+                        );
+                        if (player) {
+                            const count = validPlayers.filter(other => 
+                                getTeam(other) !== getTeam(player) && 
+                                canTrade(player, other)
+                            ).length;
+                            return { name: getPlayer(player), count };
                         }
-                    }
-                }
+                        return null;
+                    })
+                    .filter(p => p !== null);
+                
+                // Shuffle and show 6
+                const hotTargets = shuffleArray(rumorPlayersWithData).slice(0, 6);
+                
+                document.getElementById('hotTargets').innerHTML = hotTargets.map(h => 
+                    `<span class="discovery-tag" onclick="searchPlayer('${h.name.replace(/'/g, "\\'")}')">${h.name} (${h.count})</span>`
+                ).join('') || '<span class="discovery-tag">No trade rumors found</span>';
+            } else {
+                document.getElementById('hotTargets').innerHTML = '<span class="discovery-tag">Loading trade rumors...</span>';
             }
             
-            perfectPairs.sort((a, b) => b.salary - a.salary);
-            // Take top 15 perfect matches, shuffle, show 4
-            const topPerfect = shuffleArray(perfectPairs.slice(0, 15)).slice(0, 4);
+            // Randomly show Cap Hell OR Cap Paradise
+            const showCapHell = Math.random() > 0.5;
             
-            document.getElementById('perfectMatches').innerHTML = topPerfect.map(p => 
-                `<span class="discovery-tag blue" onclick="searchPlayer('${p.p1.replace(/'/g, "\\'")}')">${p.p1} ↔ ${p.p2}</span>`
-            ).join('') || '<span class="discovery-tag blue">None found</span>';
-            
-            // Cap Hell Teams (2nd Apron)
-            const capHellTeams = [...new Set(
-                validPlayers
-                    .filter(p => normalizeStatus(getStatus(p)) === '2nd Apron')
-                    .map(p => getTeam(p))
-            )];
-            
-            // Shuffle cap hell teams
-            document.getElementById('capHellTeams').innerHTML = shuffleArray(capHellTeams).slice(0, 6).map(t => 
-                `<span class="discovery-tag orange" onclick="showTeam('${t}')">${t}</span>`
-            ).join('') || '<span class="discovery-tag orange">None</span>';
-            
-            // Trade Machine Picks (balanced 2-player swaps with similar salaries, randomized)
-            const notablePerfectPairs = perfectPairs.filter(p => p.salary > 10000000);
-            const tradePicks = shuffleArray(notablePerfectPairs).slice(0, 4);
-            
-            document.getElementById('tradePicks').innerHTML = tradePicks.map(p => 
-                `<span class="discovery-tag green" onclick="searchPlayer('${p.p1.replace(/'/g, "\\'")}')">${p.p1} for ${p.p2}</span>`
-            ).join('') || '<span class="discovery-tag green">Calculating...</span>';
+            if (showCapHell) {
+                // Cap Hell Teams (2nd Apron)
+                document.getElementById('capTeamsTitle').innerHTML = '🚨 Cap Hell Teams';
+                document.getElementById('capTeamsCard').classList.remove('green');
+                document.getElementById('capTeamsCard').classList.add('orange');
+                
+                const capHellTeams = [...new Set(
+                    validPlayers
+                        .filter(p => normalizeStatus(getStatus(p)) === '2nd Apron')
+                        .map(p => getTeam(p))
+                )];
+                
+                document.getElementById('capTeams').innerHTML = shuffleArray(capHellTeams).slice(0, 6).map(t => 
+                    `<span class="discovery-tag orange" onclick="showTeam('${t}')">${t}</span>`
+                ).join('') || '<span class="discovery-tag orange">None</span>';
+            } else {
+                // Cap Paradise Teams (Cap Space)
+                document.getElementById('capTeamsTitle').innerHTML = '🌴 Cap Paradise Teams';
+                document.getElementById('capTeamsCard').classList.remove('orange');
+                document.getElementById('capTeamsCard').classList.add('green');
+                
+                const capSpaceTeams = [...new Set(
+                    validPlayers
+                        .filter(p => normalizeStatus(getStatus(p)) === 'Cap Space')
+                        .map(p => getTeam(p))
+                )];
+                
+                document.getElementById('capTeams').innerHTML = shuffleArray(capSpaceTeams).slice(0, 6).map(t => 
+                    `<span class="discovery-tag green" onclick="showTeam('${t}')">${t}</span>`
+                ).join('') || '<span class="discovery-tag green">None</span>';
+            }
+        }
+        
+        // Load trade rumors from GitHub
+        async function loadTradeRumors() {
+            try {
+                const response = await fetch(TRADE_RUMORS_URL);
+                if (!response.ok) throw new Error('Failed to load trade rumors');
+                const csv = await response.text();
+                
+                // Parse the CSV - assume first column is player name
+                const lines = csv.split('\n').filter(line => line.trim());
+                // Skip header, extract player names (first column)
+                tradeRumorPlayers = lines.slice(1).map(line => {
+                    const firstComma = line.indexOf(',');
+                    return firstComma > 0 ? line.substring(0, firstComma).trim().replace(/"/g, '') : line.trim();
+                }).filter(name => name);
+                
+                console.log('Loaded trade rumor players:', tradeRumorPlayers.length);
+            } catch (error) {
+                console.error('Error loading trade rumors:', error);
+                tradeRumorPlayers = [];
+            }
         }
         
         // Share functionality
@@ -1459,6 +1453,8 @@
                         debugPlayer(capSpacePlayer, 'Cap Space player');
                     }
                     
+                    // Load trade rumors then calculate discovery features
+                    await loadTradeRumors();
                     calculateDiscoveryFeatures();
                 } else {
                     document.getElementById('hotTargets').innerHTML = '<span class="discovery-tag">No data loaded</span>';
@@ -1582,7 +1578,7 @@
             currentResults = [];
             document.getElementById('resultsBody').innerHTML = `
                 <tr>
-                    <td colspan="7">
+                    <td colspan="6">
                         <div class="empty-state">
                             <div class="icon">🏀</div>
                             <div>Search for a player to see available trade options</div>
