@@ -1,0 +1,62 @@
+name: Sync Google Sheet Data
+
+on:
+  # Run every 6 hours
+  schedule:
+    - cron: '0 */6 * * *'
+  # Allow manual trigger
+  workflow_dispatch:
+  # Run on push to main (optional)
+  push:
+    branches: [main]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      
+      - name: Fetch Google Sheet and convert to JSON
+        run: |
+          # Fetch CSV from Google Sheets
+          curl -L "https://docs.google.com/spreadsheets/d/e/2PACX-1vSg6im6IYB6HXMGzQbmmBnLw9SfQLzxCSo8OfChxlJLhsB6BBCO0wPF_TMch0YgAbtFqYkwDWrsxRe7/pub?gid=0&single=true&output=csv" -o data.csv
+          
+          # Convert CSV to JSON using Node.js
+          node -e "
+            const fs = require('fs');
+            const csv = fs.readFileSync('data.csv', 'utf8');
+            const lines = csv.split('\n').filter(l => l.trim());
+            const headers = lines[0].split(',').map((h, i) => '_col' + i);
+            const data = lines.slice(1).map(line => {
+              const values = [];
+              let current = '';
+              let inQuotes = false;
+              for (let char of line) {
+                if (char === '\"') inQuotes = !inQuotes;
+                else if (char === ',' && !inQuotes) {
+                  values.push(current.trim());
+                  current = '';
+                } else {
+                  current += char;
+                }
+              }
+              values.push(current.trim());
+              const obj = {};
+              headers.forEach((h, i) => obj[h] = values[i] || '');
+              return obj;
+            }).filter(p => p._col0 && p._col2 && p._col3);
+            fs.writeFileSync('players.json', JSON.stringify(data));
+            console.log('Converted ' + data.length + ' players');
+          "
+          
+          # Clean up
+          rm data.csv
+      
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add players.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update player data $(date -u +%Y-%m-%d)" && git push)
