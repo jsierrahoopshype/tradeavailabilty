@@ -1,14 +1,15 @@
 name: Sync Google Sheet Data
 
 on:
-  # Run every 6 hours
+  # Run once daily at 6 AM UTC
   schedule:
-    - cron: '0 */6 * * *'
+    - cron: '0 6 * * *'
   # Allow manual trigger
   workflow_dispatch:
-  # Run on push to main (optional)
-  push:
-    branches: [main]
+
+# IMPORTANT: Grant write permissions to push changes
+permissions:
+  contents: write
 
 jobs:
   sync:
