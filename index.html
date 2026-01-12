@@ -699,91 +699,6 @@
             border-color: #e74c3c;
         }
         
-        /* Favorites Section */
-        .favorites-section {
-            background: white;
-            border-radius: 12px;
-            padding: 16px;
-            margin-top: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-        
-        .favorites-section h3 {
-            font-size: 14px;
-            color: #7f8c8d;
-            margin-bottom: 12px;
-        }
-        
-        .favorites-items {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        
-        .favorite-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: #fff3cd;
-            padding: 6px 10px;
-            border-radius: 16px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid #ffc107;
-        }
-        
-        .favorite-tag:hover {
-            background: #ffc107;
-        }
-        
-        .favorite-tag .remove {
-            font-size: 14px;
-            color: #856404;
-            cursor: pointer;
-        }
-        
-        .favorite-tag .remove:hover {
-            color: #dc3545;
-        }
-        
-        .clear-favorites-btn {
-            margin-top: 12px;
-            padding: 6px 12px;
-            background: #f8f9fa;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 11px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .clear-favorites-btn:hover {
-            background: #dc3545;
-            color: white;
-            border-color: #dc3545;
-        }
-        
-        /* Star button for favorites */
-        .star-btn {
-            background: none;
-            border: none;
-            font-size: 14px;
-            cursor: pointer;
-            padding: 0 4px;
-            opacity: 0.3;
-            transition: all 0.2s;
-        }
-        
-        .star-btn:hover {
-            opacity: 1;
-            transform: scale(1.2);
-        }
-        
-        .star-btn.active {
-            opacity: 1;
-        }
-        
         /* Toast */
         .toast {
             position: fixed;
@@ -918,7 +833,7 @@
                     <h2 id="selectedName"></h2>
                     <span class="team-link" id="selectedTeam"></span>
                 </div>
-                <button class="share-btn" id="shareBtn">📤 Share Results</button>
+                <button class="share-btn" id="shareBtn">📸 Share Image</button>
             </div>
             <div class="selected-player-stats">
                 <div class="stat-box">
@@ -1010,15 +925,6 @@
             </div>
         </div>
         
-        <!-- Favorites Section -->
-        <div class="favorites-section">
-            <h3>⭐ Favorites</h3>
-            <div class="favorites-items" id="favoritesList">
-                <span style="color: #7f8c8d; font-size: 13px;">Click ⭐ next to a player to add to favorites</span>
-            </div>
-            <button class="clear-favorites-btn" id="clearFavorites" style="display: none;">Clear All</button>
-        </div>
-        
         <!-- Cap Teams Section (bottom) -->
         <div class="discovery-section bottom-discovery">
             <div class="discovery-card" id="capTeamsCard">
@@ -1103,9 +1009,6 @@
         // Salary filter range
         let minSalaryFilter = 0;
         let maxSalaryFilter = 60000000;
-        
-        // Favorites (stored in localStorage)
-        let favorites = JSON.parse(localStorage.getItem('tradecalc_favorites') || '[]');
         let sortColumn = 'rating';
         let sortDirection = 'desc';
         let activeFilter = 'all';
@@ -1383,7 +1286,6 @@
                 const restrictions = getRestrictions(p);
                 const noTrade = getNoTrade(p);
                 const rating = getRating(p);
-                const isFavorite = favorites.includes(name);
                 
                 // Determine availability status
                 let availText = 'Available';
@@ -1400,7 +1302,6 @@
                     <tr>
                         <td>
                             <div class="player-cell">
-                                <button class="star-btn ${isFavorite ? 'active' : ''}" onclick="toggleFavorite('${name.replace(/'/g, "\\'")}')">${isFavorite ? '⭐' : '☆'}</button>
                                 <span class="name" onclick="searchPlayer('${name.replace(/'/g, "\\'")}')">${name}</span>
                             </div>
                         </td>
@@ -1525,7 +1426,6 @@
                 const restrictions = getRestrictions(p);
                 const noTrade = getNoTrade(p);
                 const rating = getRating(p);
-                const isFavorite = favorites.includes(name);
                 
                 let availText = 'Available';
                 let availClass = 'available';
@@ -1541,7 +1441,6 @@
                     <tr>
                         <td>
                             <div class="player-cell">
-                                <button class="star-btn ${isFavorite ? 'active' : ''}" onclick="toggleFavorite('${name.replace(/'/g, "\\'")}')">${isFavorite ? '⭐' : '☆'}</button>
                                 <span class="name" onclick="searchPlayer('${name.replace(/'/g, "\\'")}')">${name}</span>
                             </div>
                         </td>
@@ -1644,49 +1543,6 @@
             }
         }
         
-        // Favorites functions
-        function toggleFavorite(playerName) {
-            const index = favorites.indexOf(playerName);
-            if (index > -1) {
-                favorites.splice(index, 1);
-            } else {
-                favorites.push(playerName);
-            }
-            localStorage.setItem('tradecalc_favorites', JSON.stringify(favorites));
-            renderFavorites();
-            if (currentResults.length > 0) {
-                renderResults(currentResults);
-            }
-        }
-        
-        function renderFavorites() {
-            const container = document.getElementById('favoritesList');
-            const clearBtn = document.getElementById('clearFavorites');
-            
-            if (favorites.length === 0) {
-                container.innerHTML = '<span style="color: #7f8c8d; font-size: 13px;">Click ☆ next to a player to add to favorites</span>';
-                clearBtn.style.display = 'none';
-                return;
-            }
-            
-            container.innerHTML = favorites.map(name => `
-                <span class="favorite-tag" onclick="searchPlayer('${name.replace(/'/g, "\\'")}')">
-                    ${name}
-                    <span class="remove" onclick="event.stopPropagation(); toggleFavorite('${name.replace(/'/g, "\\'")}')">✕</span>
-                </span>
-            `).join('');
-            clearBtn.style.display = 'inline-block';
-        }
-        
-        function clearAllFavorites() {
-            favorites = [];
-            localStorage.setItem('tradecalc_favorites', JSON.stringify(favorites));
-            renderFavorites();
-            if (currentResults.length > 0) {
-                renderResults(currentResults);
-            }
-        }
-        
         // Salary filter functions
         function updateSalaryFilter() {
             const minSlider = document.getElementById('minSlider');
@@ -1730,19 +1586,168 @@
         function shareResults() {
             if (!selectedPlayer) return;
             
-            const name = selectedPlayer['PLAYER'] || selectedPlayer['Player'];
-            const url = `${window.location.origin}${window.location.pathname}?player=${encodeURIComponent(name)}`;
+            const name = getPlayer(selectedPlayer);
+            const team = getTeam(selectedPlayer);
+            const salary = parseSalary(getSalary(selectedPlayer));
+            const status = getStatus(selectedPlayer);
             
-            if (navigator.share) {
-                navigator.share({
-                    title: `NBA Trade Calculator - ${name}`,
-                    text: `Found ${currentResults.length} trade matches for ${name}`,
-                    url: url
-                });
-            } else {
-                navigator.clipboard.writeText(url);
-                showToast('Link copied to clipboard!');
-            }
+            // Get top 5 matches sorted by rating
+            const topMatches = [...currentResults]
+                .sort((a, b) => getRating(b) - getRating(a))
+                .slice(0, 5);
+            
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = 800;
+            canvas.height = 500 + (topMatches.length * 50);
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#e74c3c');
+            gradient.addColorStop(0.3, '#c0392b');
+            gradient.addColorStop(0.3, '#ffffff');
+            gradient.addColorStop(1, '#f8f9fa');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Header section
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 36px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(name, 40, 60);
+            
+            ctx.font = '20px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText(`${getTeamAbbrev(team)} • ${formatSalary(salary)} • ${status}`, 40, 95);
+            
+            // Matches count
+            ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(`${currentResults.length} Trade Matches`, 40, 135);
+            
+            // White card area
+            const cardY = 170;
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = 'rgba(0,0,0,0.1)';
+            ctx.shadowBlur = 20;
+            ctx.shadowOffsetY = 5;
+            roundRect(ctx, 30, cardY, canvas.width - 60, canvas.height - cardY - 30, 12);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Section title
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText('Top Trade Targets by Rating', 60, cardY + 40);
+            
+            // Table header
+            const tableY = cardY + 70;
+            ctx.fillStyle = '#7f8c8d';
+            ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText('PLAYER', 60, tableY);
+            ctx.fillText('TEAM', 320, tableY);
+            ctx.fillText('RATING', 420, tableY);
+            ctx.fillText('SALARY', 520, tableY);
+            ctx.fillText('STATUS', 640, tableY);
+            
+            // Draw line under header
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.beginPath();
+            ctx.moveTo(60, tableY + 10);
+            ctx.lineTo(canvas.width - 60, tableY + 10);
+            ctx.stroke();
+            
+            // Table rows
+            topMatches.forEach((match, i) => {
+                const rowY = tableY + 45 + (i * 50);
+                const matchName = getPlayer(match);
+                const matchTeam = getTeam(match);
+                const matchRating = getRating(match);
+                const matchSalary = parseSalary(getSalary(match));
+                const matchStatus = getStatus(match);
+                
+                // Alternating row background
+                if (i % 2 === 0) {
+                    ctx.fillStyle = '#f8f9fa';
+                    ctx.fillRect(50, rowY - 25, canvas.width - 100, 45);
+                }
+                
+                // Player name
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.fillText(matchName, 60, rowY);
+                
+                // Team
+                ctx.fillStyle = '#1976d2';
+                ctx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.fillText(getTeamAbbrev(matchTeam), 320, rowY);
+                
+                // Rating
+                ctx.fillStyle = '#e74c3c';
+                ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.fillText(matchRating > 0 ? matchRating.toFixed(1) : '-', 420, rowY);
+                
+                // Salary
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = '14px SF Mono, Monaco, monospace';
+                ctx.fillText(formatSalary(matchSalary), 520, rowY);
+                
+                // Status badge
+                const statusColors = {
+                    'Cap Space': '#27ae60',
+                    'Below Tax': '#3498db',
+                    'Tax Team': '#f39c12',
+                    '1st Apron': '#e67e22',
+                    '2nd Apron': '#e74c3c'
+                };
+                ctx.fillStyle = statusColors[normalizeStatus(matchStatus)] || '#7f8c8d';
+                ctx.font = '11px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.fillText(matchStatus, 640, rowY);
+            });
+            
+            // Footer
+            ctx.fillStyle = '#bdc3c7';
+            ctx.font = '11px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText('hoopshype.com/trade-calculator', 60, canvas.height - 45);
+            
+            // Convert to blob and download/share
+            canvas.toBlob(function(blob) {
+                const file = new File([blob], `${name.replace(/\s+/g, '-')}-trade-matches.png`, { type: 'image/png' });
+                
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    navigator.share({
+                        files: [file],
+                        title: `Trade Matches for ${name}`,
+                        text: `Found ${currentResults.length} CBA-compliant trade matches`
+                    });
+                } else {
+                    // Fallback: download the image
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${name.replace(/\s+/g, '-')}-trade-matches.png`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    showToast('Image downloaded!');
+                }
+            }, 'image/png');
+        }
+        
+        // Helper function for rounded rectangles
+        function roundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
         }
         
         function showToast(message) {
@@ -1958,12 +1963,6 @@
         document.getElementById('minSlider').addEventListener('input', updateSalaryFilter);
         document.getElementById('maxSlider').addEventListener('input', updateSalaryFilter);
         document.getElementById('resetSalaryFilter').addEventListener('click', resetSalaryFilter);
-        
-        // Clear favorites handler
-        document.getElementById('clearFavorites').addEventListener('click', clearAllFavorites);
-        
-        // Initialize favorites on load
-        renderFavorites();
         
         // Initialize on load
         init();
