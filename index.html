@@ -1079,7 +1079,6 @@
             
             // Parse header row properly (handle quoted headers)
             const headers = parseCSVLine(lines[0]);
-            console.log('Parsed headers:', headers.slice(0, 15));
             
             return lines.slice(1).map((line, idx) => {
                 const values = parseCSVLine(line);
@@ -1600,68 +1599,71 @@
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            // Set canvas size
-            canvas.width = 800;
-            canvas.height = 500 + (topMatches.length * 50);
+            // Calculate exact height needed
+            const headerHeight = 150;
+            const cardPaddingTop = 40;
+            const tableHeaderHeight = 30;
+            const rowHeight = 42;
+            const footerHeight = 35;
             
-            // Background gradient
-            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            gradient.addColorStop(0, '#e74c3c');
-            gradient.addColorStop(0.3, '#c0392b');
-            gradient.addColorStop(0.3, '#ffffff');
-            gradient.addColorStop(1, '#f8f9fa');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const contentHeight = cardPaddingTop + tableHeaderHeight + (topMatches.length * rowHeight) + footerHeight;
+            canvas.width = 700;
+            canvas.height = headerHeight + contentHeight;
+            
+            // Red header background
+            ctx.fillStyle = '#e74c3c';
+            ctx.fillRect(0, 0, canvas.width, headerHeight);
+            
+            // Slight gradient overlay on header
+            const headerGradient = ctx.createLinearGradient(0, 0, 0, headerHeight);
+            headerGradient.addColorStop(0, 'rgba(0,0,0,0)');
+            headerGradient.addColorStop(1, 'rgba(0,0,0,0.15)');
+            ctx.fillStyle = headerGradient;
+            ctx.fillRect(0, 0, canvas.width, headerHeight);
+            
+            // White content area
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, headerHeight, canvas.width, canvas.height - headerHeight);
             
             // Header section
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 36px -apple-system, BlinkMacSystemFont, sans-serif';
-            ctx.fillText(name, 40, 60);
+            ctx.font = 'bold 32px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(name, 30, 45);
             
-            ctx.font = '20px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.font = '16px -apple-system, BlinkMacSystemFont, sans-serif';
             ctx.fillStyle = 'rgba(255,255,255,0.9)';
-            ctx.fillText(`${getTeamAbbrev(team)} • ${formatSalary(salary)} • ${status}`, 40, 95);
+            ctx.fillText(`${getTeamAbbrev(team)} • ${formatSalary(salary)} • ${status}`, 30, 75);
             
             // Matches count
-            ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, sans-serif';
             ctx.fillStyle = '#ffffff';
-            ctx.fillText(`${currentResults.length} Trade Matches`, 40, 135);
+            ctx.fillText(`${currentResults.length} Trade Matches`, 30, 115);
             
-            // White card area
-            const cardY = 170;
-            ctx.fillStyle = '#ffffff';
-            ctx.shadowColor = 'rgba(0,0,0,0.1)';
-            ctx.shadowBlur = 20;
-            ctx.shadowOffsetY = 5;
-            roundRect(ctx, 30, cardY, canvas.width - 60, canvas.height - cardY - 30, 12);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            
-            // Section title
+            // Section title in white area
             ctx.fillStyle = '#2c3e50';
-            ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, sans-serif';
-            ctx.fillText('Top Trade Targets by Rating', 60, cardY + 40);
+            ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText('Top Trade Targets by Rating', 30, headerHeight + 28);
             
             // Table header
-            const tableY = cardY + 70;
+            const tableY = headerHeight + 50;
             ctx.fillStyle = '#7f8c8d';
-            ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
-            ctx.fillText('PLAYER', 60, tableY);
-            ctx.fillText('TEAM', 320, tableY);
-            ctx.fillText('RATING', 420, tableY);
-            ctx.fillText('SALARY', 520, tableY);
-            ctx.fillText('STATUS', 640, tableY);
+            ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText('PLAYER', 30, tableY);
+            ctx.fillText('TEAM', 240, tableY);
+            ctx.fillText('RATING', 320, tableY);
+            ctx.fillText('SALARY', 410, tableY);
+            ctx.fillText('STATUS', 520, tableY);
             
             // Draw line under header
             ctx.strokeStyle = '#e0e0e0';
             ctx.beginPath();
-            ctx.moveTo(60, tableY + 10);
-            ctx.lineTo(canvas.width - 60, tableY + 10);
+            ctx.moveTo(30, tableY + 8);
+            ctx.lineTo(canvas.width - 30, tableY + 8);
             ctx.stroke();
             
             // Table rows
             topMatches.forEach((match, i) => {
-                const rowY = tableY + 45 + (i * 50);
+                const rowY = tableY + 30 + (i * rowHeight);
                 const matchName = getPlayer(match);
                 const matchTeam = getTeam(match);
                 const matchRating = getRating(match);
@@ -1671,28 +1673,28 @@
                 // Alternating row background
                 if (i % 2 === 0) {
                     ctx.fillStyle = '#f8f9fa';
-                    ctx.fillRect(50, rowY - 25, canvas.width - 100, 45);
+                    ctx.fillRect(20, rowY - 18, canvas.width - 40, rowHeight);
                 }
                 
                 // Player name
                 ctx.fillStyle = '#2c3e50';
-                ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
-                ctx.fillText(matchName, 60, rowY);
+                ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.fillText(matchName, 30, rowY);
                 
                 // Team
                 ctx.fillStyle = '#1976d2';
-                ctx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
-                ctx.fillText(getTeamAbbrev(matchTeam), 320, rowY);
+                ctx.font = '13px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.fillText(getTeamAbbrev(matchTeam), 240, rowY);
                 
                 // Rating
                 ctx.fillStyle = '#e74c3c';
-                ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
-                ctx.fillText(matchRating > 0 ? matchRating.toFixed(1) : '-', 420, rowY);
+                ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.fillText(matchRating > 0 ? matchRating.toFixed(1) : '-', 320, rowY);
                 
                 // Salary
                 ctx.fillStyle = '#2c3e50';
-                ctx.font = '14px SF Mono, Monaco, monospace';
-                ctx.fillText(formatSalary(matchSalary), 520, rowY);
+                ctx.font = '13px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.fillText(formatSalary(matchSalary), 410, rowY);
                 
                 // Status badge
                 const statusColors = {
@@ -1703,14 +1705,14 @@
                     '2nd Apron': '#e74c3c'
                 };
                 ctx.fillStyle = statusColors[normalizeStatus(matchStatus)] || '#7f8c8d';
-                ctx.font = '11px -apple-system, BlinkMacSystemFont, sans-serif';
-                ctx.fillText(matchStatus, 640, rowY);
+                ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.fillText(matchStatus, 520, rowY);
             });
             
             // Footer
             ctx.fillStyle = '#bdc3c7';
-            ctx.font = '11px -apple-system, BlinkMacSystemFont, sans-serif';
-            ctx.fillText('hoopshype.com/trade-calculator', 60, canvas.height - 45);
+            ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText('hoopshype.com/trade-calculator', 30, canvas.height - 10);
             
             // Convert to blob and download/share
             canvas.toBlob(function(blob) {
@@ -1735,21 +1737,6 @@
             }, 'image/png');
         }
         
-        // Helper function for rounded rectangles
-        function roundRect(ctx, x, y, width, height, radius) {
-            ctx.beginPath();
-            ctx.moveTo(x + radius, y);
-            ctx.lineTo(x + width - radius, y);
-            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-            ctx.lineTo(x + width, y + height - radius);
-            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-            ctx.lineTo(x + radius, y + height);
-            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-            ctx.lineTo(x, y + radius);
-            ctx.quadraticCurveTo(x, y, x + radius, y);
-            ctx.closePath();
-        }
-        
         function showToast(message) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
@@ -1760,21 +1747,15 @@
         // Initialize
         async function init() {
             try {
-                // Load both CSVs in parallel for speed
-                const [mainResponse, rumorsResponse] = await Promise.all([
-                    fetch(CSV_URL),
-                    fetch(TRADE_RUMORS_URL).catch(e => { console.log('Trade rumors fetch failed:', e); return null; })
-                ]);
+                // Load main CSV first (priority)
+                const mainResponse = await fetch(CSV_URL);
                 
                 if (!mainResponse.ok) {
                     throw new Error(`HTTP ${mainResponse.status}`);
                 }
                 
                 const csv = await mainResponse.text();
-                console.log('Main CSV loaded, length:', csv.length);
-                
                 allPlayers = parseCSV(csv);
-                console.log('Parsed players:', allPlayers.length);
                 
                 // Filter to only players with valid data
                 allPlayers = allPlayers.filter(p => {
@@ -1783,34 +1764,15 @@
                     const salary = parseSalary(getSalary(p));
                     return name && team && salary > 0;
                 });
-                console.log('Valid players after filter:', allPlayers.length);
                 
-                // Parse trade rumors if loaded
-                if (rumorsResponse && rumorsResponse.ok) {
-                    const rumorsCsv = await rumorsResponse.text();
-                    console.log('Trade rumors CSV loaded, length:', rumorsCsv.length);
-                    const lines = rumorsCsv.split('\n').filter(line => line.trim());
-                    // CSV format: date,player,team,source,snippet,url,title
-                    // Player name is in second column (index 1)
-                    tradeRumorPlayers = lines.slice(1).map(line => {
-                        const cols = line.split(',');
-                        return cols[1] ? cols[1].trim().replace(/"/g, '') : '';
-                    }).filter(name => name);
-                    // Remove duplicates
-                    tradeRumorPlayers = [...new Set(tradeRumorPlayers)];
-                    console.log('Parsed trade rumor players:', tradeRumorPlayers.length, tradeRumorPlayers.slice(0, 5));
-                } else {
-                    console.log('Trade rumors not loaded, using fallback');
-                }
-                
+                // Show discovery features immediately with fallback
                 if (allPlayers.length > 0) {
-                    console.log('Sample player:', getPlayer(allPlayers[0]), getTeam(allPlayers[0]));
                     calculateDiscoveryFeatures();
                 }
                 
                 renderLeaderboard();
                 
-                // Check URL for player or team param, otherwise load a random trade rumor player (or highest rated)
+                // Check URL for player or team param
                 const urlParams = new URLSearchParams(window.location.search);
                 const playerParam = urlParams.get('player');
                 const teamParam = urlParams.get('team');
@@ -1820,41 +1782,40 @@
                 } else if (teamParam) {
                     showTeam(teamParam);
                 } else {
-                    // Try to auto-load a player
-                    let playerToLoad = null;
-                    
-                    // First try trade rumor players
-                    if (tradeRumorPlayers.length > 0) {
-                        const validRumorPlayers = tradeRumorPlayers.filter(name => 
-                            allPlayers.some(p => getPlayer(p).toLowerCase() === name.toLowerCase())
-                        );
-                        if (validRumorPlayers.length > 0) {
-                            playerToLoad = validRumorPlayers[Math.floor(Math.random() * validRumorPlayers.length)];
-                        }
-                    }
-                    
-                    // Fallback to highest rated player
-                    if (!playerToLoad && allPlayers.length > 0) {
+                    // Auto-load a high-rated player immediately
+                    if (allPlayers.length > 0) {
                         const topRated = [...allPlayers]
                             .filter(p => parseSalary(getSalary(p)) > 0)
-                            .sort((a, b) => getRating(b) - getRating(a));
+                            .sort((a, b) => getRating(b) - getRating(a))
+                            .slice(0, 10);
                         if (topRated.length > 0) {
-                            // Pick randomly from top 10 rated
-                            const top10 = topRated.slice(0, 10);
-                            playerToLoad = getPlayer(top10[Math.floor(Math.random() * top10.length)]);
+                            const playerToLoad = getPlayer(topRated[Math.floor(Math.random() * topRated.length)]);
+                            searchPlayer(playerToLoad);
                         }
-                    }
-                    
-                    if (playerToLoad) {
-                        console.log('Auto-loading player:', playerToLoad);
-                        searchPlayer(playerToLoad);
-                    } else {
-                        console.log('No player to auto-load');
                     }
                 }
                 
+                // Load trade rumors in background (non-blocking)
+                fetch(TRADE_RUMORS_URL)
+                    .then(response => response.ok ? response.text() : null)
+                    .then(rumorsCsv => {
+                        if (rumorsCsv) {
+                            const lines = rumorsCsv.split('\n').filter(line => line.trim());
+                            tradeRumorPlayers = [...new Set(
+                                lines.slice(1).map(line => {
+                                    const cols = line.split(',');
+                                    return cols[1] ? cols[1].trim().replace(/"/g, '') : '';
+                                }).filter(name => name)
+                            )];
+                            // Update discovery with trade rumors
+                            if (tradeRumorPlayers.length > 0) {
+                                calculateDiscoveryFeatures();
+                            }
+                        }
+                    })
+                    .catch(() => {}); // Silently fail, fallback already shown
+                
             } catch (error) {
-                console.error('Error loading data:', error);
                 document.getElementById('hotTargets').innerHTML = `<span class="discovery-tag">Error loading data</span>`;
             }
         }
