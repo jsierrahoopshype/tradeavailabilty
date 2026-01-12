@@ -21,35 +21,38 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 12px;
         }
         
-        header {
-            text-align: center;
-            margin-bottom: 24px;
-            padding: 24px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-        
-        h1 {
-            font-size: 28px;
-            color: #e74c3c;
-            margin-bottom: 8px;
-        }
-        
-        .subtitle {
-            color: #7f8c8d;
-            font-size: 14px;
+        @media (min-width: 768px) {
+            .container {
+                padding: 20px;
+            }
         }
         
         /* Discovery Section */
         .discovery-section {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        @media (min-width: 768px) {
+            .discovery-section {
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 16px;
+                margin-bottom: 24px;
+            }
+        }
+        
+        .top-discovery {
+            margin-bottom: 12px;
+        }
+        
+        .bottom-discovery {
+            margin-top: 16px;
+            margin-bottom: 0;
         }
         
         .discovery-card {
@@ -360,8 +363,9 @@
         
         .player-cell {
             display: flex;
-            flex-direction: column;
-            gap: 2px;
+            flex-direction: row;
+            align-items: center;
+            gap: 4px;
         }
         
         .player-cell .name {
@@ -585,6 +589,201 @@
             color: #e74c3c;
         }
         
+        /* Salary Filter Section */
+        .filter-section {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .filter-section h3 {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 12px;
+        }
+        
+        .salary-slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .salary-inputs {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        
+        .salary-input-group {
+            flex: 1;
+        }
+        
+        .salary-input-group label {
+            display: block;
+            font-size: 11px;
+            color: #7f8c8d;
+            margin-bottom: 4px;
+        }
+        
+        .salary-input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            background: #f8f9fa;
+        }
+        
+        .dual-slider {
+            position: relative;
+            height: 30px;
+        }
+        
+        .dual-slider input[type="range"] {
+            position: absolute;
+            width: 100%;
+            height: 6px;
+            background: transparent;
+            pointer-events: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        
+        .dual-slider input[type="range"]::-webkit-slider-runnable-track {
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+        }
+        
+        .dual-slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #e74c3c;
+            border-radius: 50%;
+            cursor: pointer;
+            pointer-events: auto;
+            margin-top: -7px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .dual-slider input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #e74c3c;
+            border-radius: 50%;
+            cursor: pointer;
+            pointer-events: auto;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .reset-filter-btn {
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .reset-filter-btn:hover {
+            background: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+        }
+        
+        /* Favorites Section */
+        .favorites-section {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .favorites-section h3 {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 12px;
+        }
+        
+        .favorites-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .favorite-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #fff3cd;
+            padding: 6px 10px;
+            border-radius: 16px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #ffc107;
+        }
+        
+        .favorite-tag:hover {
+            background: #ffc107;
+        }
+        
+        .favorite-tag .remove {
+            font-size: 14px;
+            color: #856404;
+            cursor: pointer;
+        }
+        
+        .favorite-tag .remove:hover {
+            color: #dc3545;
+        }
+        
+        .clear-favorites-btn {
+            margin-top: 12px;
+            padding: 6px 12px;
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .clear-favorites-btn:hover {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+        
+        /* Star button for favorites */
+        .star-btn {
+            background: none;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 0 4px;
+            opacity: 0.3;
+            transition: all 0.2s;
+        }
+        
+        .star-btn:hover {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+        
+        .star-btn.active {
+            opacity: 1;
+        }
+        
         /* Toast */
         .toast {
             position: fixed;
@@ -606,42 +805,99 @@
         
         /* Responsive */
         @media (max-width: 768px) {
-            .discovery-section {
-                grid-template-columns: 1fr;
-            }
-            
             .results-table {
                 display: block;
                 overflow-x: auto;
+                font-size: 13px;
+            }
+            
+            .results-table th,
+            .results-table td {
+                padding: 8px 6px;
+                white-space: nowrap;
             }
             
             .selected-player-header {
                 flex-direction: column;
                 gap: 12px;
             }
+            
+            .selected-player-stats {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            
+            .stat-box {
+                padding: 10px;
+            }
+            
+            .stat-box .value {
+                font-size: 16px;
+            }
+            
+            .stat-box .label {
+                font-size: 10px;
+            }
+            
+            .discovery-card {
+                padding: 12px;
+            }
+            
+            .discovery-card h3 {
+                font-size: 14px;
+            }
+            
+            .discovery-tag {
+                font-size: 12px;
+                padding: 4px 8px;
+            }
+            
+            .search-container input {
+                padding: 12px 16px;
+                font-size: 16px;
+            }
+            
+            .filter-tabs {
+                gap: 6px;
+            }
+            
+            .filter-tab {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+            
+            .results-title {
+                font-size: 14px;
+            }
+            
+            .player-cell .name {
+                font-size: 13px;
+            }
+            
+            .status-badge {
+                font-size: 9px;
+                padding: 2px 5px;
+            }
+            
+            .availability-badge {
+                font-size: 9px;
+                padding: 2px 5px;
+            }
+            
+            .leaderboard-section {
+                padding: 12px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>🏀 NBA Trade Calculator</h1>
-            <p class="subtitle">Find CBA-compliant salary matches for any player</p>
-        </header>
-        
-        <!-- Discovery Section -->
-        <div class="discovery-section">
+        <!-- Hot Trade Targets at top -->
+        <div class="discovery-section top-discovery">
             <div class="discovery-card" id="hotTargetsCard">
                 <h3>🔥 Hot Trade Targets</h3>
                 <div class="items" id="hotTargets">
                     <span class="discovery-tag">Loading...</span>
-                </div>
-            </div>
-            
-            <div class="discovery-card orange" id="capTeamsCard">
-                <h3 id="capTeamsTitle">🚨 Cap Hell Teams</h3>
-                <div class="items" id="capTeams">
-                    <span class="discovery-tag orange">Loading...</span>
                 </div>
             </div>
         </div>
@@ -678,7 +934,7 @@
                     <div class="value" id="selectedCapSpace"></div>
                 </div>
                 <div class="stat-box">
-                    <div class="label" id="matchesLabel">Trade Matches</div>
+                    <div class="label" id="matchesLabel">Matches</div>
                     <div class="value" id="selectedMatches"></div>
                 </div>
             </div>
@@ -691,7 +947,7 @@
         <div class="results-section">
             <div class="results-header">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <span class="results-title" id="resultsTitle">Available Trade Targets</span>
+                    <span class="results-title" id="resultsTitle">Trade Targets</span>
                     <span class="results-count" id="resultsCount">0</span>
                 </div>
                 <div class="filter-tabs">
@@ -731,6 +987,47 @@
                 <span style="color: #7f8c8d; font-size: 13px;">Start searching to build the leaderboard</span>
             </div>
         </div>
+        
+        <!-- Salary Filter Section -->
+        <div class="filter-section">
+            <h3>💰 Salary Filter</h3>
+            <div class="salary-slider-container">
+                <div class="salary-inputs">
+                    <div class="salary-input-group">
+                        <label>Min</label>
+                        <input type="text" id="minSalary" value="$0" readonly>
+                    </div>
+                    <div class="salary-input-group">
+                        <label>Max</label>
+                        <input type="text" id="maxSalary" value="$60M" readonly>
+                    </div>
+                </div>
+                <div class="dual-slider">
+                    <input type="range" id="minSlider" min="0" max="60000000" value="0" step="1000000">
+                    <input type="range" id="maxSlider" min="0" max="60000000" value="60000000" step="1000000">
+                </div>
+                <button class="reset-filter-btn" id="resetSalaryFilter">Reset Filter</button>
+            </div>
+        </div>
+        
+        <!-- Favorites Section -->
+        <div class="favorites-section">
+            <h3>⭐ Favorites</h3>
+            <div class="favorites-items" id="favoritesList">
+                <span style="color: #7f8c8d; font-size: 13px;">Click ⭐ next to a player to add to favorites</span>
+            </div>
+            <button class="clear-favorites-btn" id="clearFavorites" style="display: none;">Clear All</button>
+        </div>
+        
+        <!-- Cap Teams Section (bottom) -->
+        <div class="discovery-section bottom-discovery">
+            <div class="discovery-card" id="capTeamsCard">
+                <h3 id="capTeamsTitle">🌴 Cap Paradise Teams</h3>
+                <div class="items" id="capTeams">
+                    <span class="discovery-tag">Loading...</span>
+                </div>
+            </div>
+        </div>
     </div>
     
     <!-- Team Modal -->
@@ -760,10 +1057,55 @@
         // Trade rumor players (loaded from CSV)
         let tradeRumorPlayers = [];
         
+        // Team abbreviations for mobile
+        const TEAM_ABBREV = {
+            'Atlanta': 'ATL', 'Atlanta Hawks': 'ATL',
+            'Boston': 'BOS', 'Boston Celtics': 'BOS',
+            'Brooklyn': 'BKN', 'Brooklyn Nets': 'BKN',
+            'Charlotte': 'CHA', 'Charlotte Hornets': 'CHA',
+            'Chicago': 'CHI', 'Chicago Bulls': 'CHI',
+            'Cleveland': 'CLE', 'Cleveland Cavaliers': 'CLE',
+            'Dallas': 'DAL', 'Dallas Mavericks': 'DAL',
+            'Denver': 'DEN', 'Denver Nuggets': 'DEN',
+            'Detroit': 'DET', 'Detroit Pistons': 'DET',
+            'Golden State': 'GSW', 'Golden State Warriors': 'GSW',
+            'Houston': 'HOU', 'Houston Rockets': 'HOU',
+            'Indiana': 'IND', 'Indiana Pacers': 'IND',
+            'LA Clippers': 'LAC', 'Los Angeles Clippers': 'LAC', 'Clippers': 'LAC',
+            'LA Lakers': 'LAL', 'Los Angeles Lakers': 'LAL', 'Lakers': 'LAL',
+            'Memphis': 'MEM', 'Memphis Grizzlies': 'MEM',
+            'Miami': 'MIA', 'Miami Heat': 'MIA',
+            'Milwaukee': 'MIL', 'Milwaukee Bucks': 'MIL',
+            'Minnesota': 'MIN', 'Minnesota Timberwolves': 'MIN',
+            'New Orleans': 'NOP', 'New Orleans Pelicans': 'NOP',
+            'New York': 'NYK', 'New York Knicks': 'NYK',
+            'Oklahoma City': 'OKC', 'Oklahoma City Thunder': 'OKC',
+            'Orlando': 'ORL', 'Orlando Magic': 'ORL',
+            'Philadelphia': 'PHI', 'Philadelphia 76ers': 'PHI',
+            'Phoenix': 'PHX', 'Phoenix Suns': 'PHX',
+            'Portland': 'POR', 'Portland Trail Blazers': 'POR',
+            'Sacramento': 'SAC', 'Sacramento Kings': 'SAC',
+            'San Antonio': 'SAS', 'San Antonio Spurs': 'SAS',
+            'Toronto': 'TOR', 'Toronto Raptors': 'TOR',
+            'Utah': 'UTA', 'Utah Jazz': 'UTA',
+            'Washington': 'WAS', 'Washington Wizards': 'WAS'
+        };
+        
+        function getTeamAbbrev(team) {
+            return TEAM_ABBREV[team] || team;
+        }
+        
         // State
         let allPlayers = [];
         let selectedPlayer = null;
         let currentResults = [];
+        
+        // Salary filter range
+        let minSalaryFilter = 0;
+        let maxSalaryFilter = 60000000;
+        
+        // Favorites (stored in localStorage)
+        let favorites = JSON.parse(localStorage.getItem('tradecalc_favorites') || '[]');
         let sortColumn = 'rating';
         let sortDirection = 'desc';
         let activeFilter = 'all';
@@ -988,6 +1330,12 @@
                 filtered = matches.filter(m => !getRestrictions(m) && !getNoTrade(m));
             }
             
+            // Apply salary range filter
+            filtered = filtered.filter(m => {
+                const salary = parseSalary(getSalary(m));
+                return salary >= minSalaryFilter && salary <= maxSalaryFilter;
+            });
+            
             // Sort
             filtered.sort((a, b) => {
                 let aVal, bVal;
@@ -1005,12 +1353,10 @@
                         bVal = parseSalary(getSalary(b));
                         break;
                     case 'status':
-                        aVal = getStatus(a).toLowerCase();
-                        bVal = getStatus(b).toLowerCase();
-                        break;
-                    case 'fit':
-                        aVal = a.fitScore;
-                        bVal = b.fitScore;
+                        // Sort by flexibility: Cap Space (most) → Below Tax → Tax Team → 1st Apron → 2nd Apron (least)
+                        const statusOrder = { 'Cap Space': 1, 'Below Tax': 2, 'Tax Team': 3, '1st Apron': 4, '2nd Apron': 5 };
+                        aVal = statusOrder[normalizeStatus(getStatus(a))] || 3;
+                        bVal = statusOrder[normalizeStatus(getStatus(b))] || 3;
                         break;
                     case 'rating':
                         aVal = getRating(a);
@@ -1037,15 +1383,16 @@
                 const restrictions = getRestrictions(p);
                 const noTrade = getNoTrade(p);
                 const rating = getRating(p);
+                const isFavorite = favorites.includes(name);
                 
                 // Determine availability status
                 let availText = 'Available';
                 let availClass = 'available';
                 if (noTrade === 'YES') {
-                    availText = 'No-Trade Clause';
+                    availText = 'NTC';
                     availClass = 'unavailable';
                 } else if (restrictions) {
-                    availText = `Until ${restrictions}`;
+                    availText = restrictions;
                     availClass = 'restricted';
                 }
                 
@@ -1053,10 +1400,11 @@
                     <tr>
                         <td>
                             <div class="player-cell">
+                                <button class="star-btn ${isFavorite ? 'active' : ''}" onclick="toggleFavorite('${name.replace(/'/g, "\\'")}')">${isFavorite ? '⭐' : '☆'}</button>
                                 <span class="name" onclick="searchPlayer('${name.replace(/'/g, "\\'")}')">${name}</span>
                             </div>
                         </td>
-                        <td class="team-cell" onclick="showTeam('${team}')">${team}</td>
+                        <td class="team-cell" onclick="showTeam('${team}')" title="${team}">${getTeamAbbrev(team)}</td>
                         <td class="rating-cell">${rating > 0 ? rating.toFixed(1) : '-'}</td>
                         <td class="salary-cell">${formatSalary(salary)}</td>
                         <td><span class="status-badge ${getStatusClass(status)}">${status}</span></td>
@@ -1080,14 +1428,14 @@
             
             document.getElementById('selectedName').textContent = name;
             document.getElementById('selectedName').onclick = () => searchPlayer(name);
-            document.getElementById('selectedTeam').textContent = team;
+            document.getElementById('selectedTeam').textContent = getTeamAbbrev(team);
             document.getElementById('selectedTeam').onclick = () => showTeam(team);
             document.getElementById('salaryLabel').textContent = 'Salary';
             document.getElementById('selectedSalary').textContent = formatSalary(salary);
             document.getElementById('selectedStatus').textContent = status;
             document.getElementById('selectedCapSpace').textContent = normalizeStatus(status) === 'Cap Space' ? formatSalary(capSpace) : 'N/A';
-            document.getElementById('matchesLabel').textContent = 'Trade Matches';
-            document.getElementById('resultsTitle').textContent = 'Available Trade Targets';
+            document.getElementById('matchesLabel').textContent = 'Matches';
+            document.getElementById('resultsTitle').textContent = 'Trade Targets';
             
             const matches = findMatches(player);
             currentResults = matches;
@@ -1146,9 +1494,9 @@
             const capSpace = parseSalary(getCapSpace(roster[0]));
             
             // Update header to show team info
-            document.getElementById('selectedName').textContent = teamName;
+            document.getElementById('selectedName').textContent = getTeamAbbrev(teamName);
             document.getElementById('selectedName').onclick = null;
-            document.getElementById('selectedTeam').textContent = 'Team Roster';
+            document.getElementById('selectedTeam').textContent = 'Roster';
             document.getElementById('selectedTeam').onclick = null;
             document.getElementById('salaryLabel').textContent = 'Total Salary';
             document.getElementById('selectedSalary').textContent = formatSalary(roster.reduce((sum, p) => sum + parseSalary(getSalary(p)), 0));
@@ -1177,14 +1525,15 @@
                 const restrictions = getRestrictions(p);
                 const noTrade = getNoTrade(p);
                 const rating = getRating(p);
+                const isFavorite = favorites.includes(name);
                 
                 let availText = 'Available';
                 let availClass = 'available';
                 if (noTrade === 'YES') {
-                    availText = 'No-Trade Clause';
+                    availText = 'NTC';
                     availClass = 'unavailable';
                 } else if (restrictions) {
-                    availText = `Until ${restrictions}`;
+                    availText = restrictions;
                     availClass = 'restricted';
                 }
                 
@@ -1192,10 +1541,11 @@
                     <tr>
                         <td>
                             <div class="player-cell">
+                                <button class="star-btn ${isFavorite ? 'active' : ''}" onclick="toggleFavorite('${name.replace(/'/g, "\\'")}')">${isFavorite ? '⭐' : '☆'}</button>
                                 <span class="name" onclick="searchPlayer('${name.replace(/'/g, "\\'")}')">${name}</span>
                             </div>
                         </td>
-                        <td class="team-cell" onclick="showTeam('${team}')">${team}</td>
+                        <td class="team-cell" onclick="showTeam('${team}')" title="${team}">${getTeamAbbrev(team)}</td>
                         <td class="rating-cell">${rating > 0 ? rating.toFixed(1) : '-'}</td>
                         <td class="salary-cell">${formatSalary(salary)}</td>
                         <td><span class="status-badge ${getStatusClass(playerStatus)}">${playerStatus}</span></td>
@@ -1260,7 +1610,7 @@
                 `<span class="discovery-tag" onclick="searchPlayer('${name.replace(/'/g, "\\'")}')">${name}</span>`
             ).join('') || '<span class="discovery-tag">Loading...</span>';
             
-            // Randomly show Cap Hell OR Cap Paradise
+            // Randomly show Cap Hell OR Cap Paradise at the bottom
             const showCapHell = Math.random() > 0.5;
             
             if (showCapHell) {
@@ -1275,7 +1625,7 @@
                 )];
                 
                 document.getElementById('capTeams').innerHTML = shuffleArray(capHellTeams).slice(0, 6).map(t => 
-                    `<span class="discovery-tag orange" onclick="showTeam('${t}')">${t}</span>`
+                    `<span class="discovery-tag orange" onclick="showTeam('${t}')">${getTeamAbbrev(t)}</span>`
                 ).join('') || '<span class="discovery-tag orange">None</span>';
             } else {
                 document.getElementById('capTeamsTitle').innerHTML = '🌴 Cap Paradise Teams';
@@ -1289,8 +1639,90 @@
                 )];
                 
                 document.getElementById('capTeams').innerHTML = shuffleArray(capSpaceTeams).slice(0, 6).map(t => 
-                    `<span class="discovery-tag green" onclick="showTeam('${t}')">${t}</span>`
+                    `<span class="discovery-tag green" onclick="showTeam('${t}')">${getTeamAbbrev(t)}</span>`
                 ).join('') || '<span class="discovery-tag green">None</span>';
+            }
+        }
+        
+        // Favorites functions
+        function toggleFavorite(playerName) {
+            const index = favorites.indexOf(playerName);
+            if (index > -1) {
+                favorites.splice(index, 1);
+            } else {
+                favorites.push(playerName);
+            }
+            localStorage.setItem('tradecalc_favorites', JSON.stringify(favorites));
+            renderFavorites();
+            if (currentResults.length > 0) {
+                renderResults(currentResults);
+            }
+        }
+        
+        function renderFavorites() {
+            const container = document.getElementById('favoritesList');
+            const clearBtn = document.getElementById('clearFavorites');
+            
+            if (favorites.length === 0) {
+                container.innerHTML = '<span style="color: #7f8c8d; font-size: 13px;">Click ☆ next to a player to add to favorites</span>';
+                clearBtn.style.display = 'none';
+                return;
+            }
+            
+            container.innerHTML = favorites.map(name => `
+                <span class="favorite-tag" onclick="searchPlayer('${name.replace(/'/g, "\\'")}')">
+                    ${name}
+                    <span class="remove" onclick="event.stopPropagation(); toggleFavorite('${name.replace(/'/g, "\\'")}')">✕</span>
+                </span>
+            `).join('');
+            clearBtn.style.display = 'inline-block';
+        }
+        
+        function clearAllFavorites() {
+            favorites = [];
+            localStorage.setItem('tradecalc_favorites', JSON.stringify(favorites));
+            renderFavorites();
+            if (currentResults.length > 0) {
+                renderResults(currentResults);
+            }
+        }
+        
+        // Salary filter functions
+        function updateSalaryFilter() {
+            const minSlider = document.getElementById('minSlider');
+            const maxSlider = document.getElementById('maxSlider');
+            
+            minSalaryFilter = parseInt(minSlider.value);
+            maxSalaryFilter = parseInt(maxSlider.value);
+            
+            // Prevent crossing
+            if (minSalaryFilter > maxSalaryFilter - 1000000) {
+                if (this.id === 'minSlider') {
+                    minSlider.value = maxSalaryFilter - 1000000;
+                    minSalaryFilter = maxSalaryFilter - 1000000;
+                } else {
+                    maxSlider.value = minSalaryFilter + 1000000;
+                    maxSalaryFilter = minSalaryFilter + 1000000;
+                }
+            }
+            
+            document.getElementById('minSalary').value = formatSalary(minSalaryFilter);
+            document.getElementById('maxSalary').value = formatSalary(maxSalaryFilter);
+            
+            if (currentResults.length > 0) {
+                renderResults(currentResults);
+            }
+        }
+        
+        function resetSalaryFilter() {
+            minSalaryFilter = 0;
+            maxSalaryFilter = 60000000;
+            document.getElementById('minSlider').value = 0;
+            document.getElementById('maxSlider').value = 60000000;
+            document.getElementById('minSalary').value = '$0';
+            document.getElementById('maxSalary').value = '$60M';
+            if (currentResults.length > 0) {
+                renderResults(currentResults);
             }
         }
         
@@ -1521,6 +1953,17 @@
         
         // Share button
         document.getElementById('shareBtn').addEventListener('click', shareResults);
+        
+        // Salary slider handlers
+        document.getElementById('minSlider').addEventListener('input', updateSalaryFilter);
+        document.getElementById('maxSlider').addEventListener('input', updateSalaryFilter);
+        document.getElementById('resetSalaryFilter').addEventListener('click', resetSalaryFilter);
+        
+        // Clear favorites handler
+        document.getElementById('clearFavorites').addEventListener('click', clearAllFavorites);
+        
+        // Initialize favorites on load
+        renderFavorites();
         
         // Initialize on load
         init();
