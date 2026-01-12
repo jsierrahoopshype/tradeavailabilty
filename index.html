@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NBA Trade Calculator</title>
+    <link rel="preconnect" href="https://docs.google.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://docs.google.com">
+    <script>
+        // Start fetching IMMEDIATELY - before any CSS or DOM parsing
+        window.__csvPromise = fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vSg6im6IYB6HXMGzQbmmBnLw9SfQLzxCSo8OfChxlJLhsB6BBCO0wPF_TMch0YgAbtFqYkwDWrsxRe7/pub?gid=0&single=true&output=csv').then(r => r.text());
+    </script>
     <style>
         * {
             margin: 0;
@@ -528,6 +535,15 @@
             margin-bottom: 16px;
         }
         
+        .loading-state .icon {
+            animation: pulse 1s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
+        }
+        
         .loading {
             text-align: center;
             padding: 40px;
@@ -885,9 +901,9 @@
                 <tbody id="resultsBody">
                     <tr>
                         <td colspan="6">
-                            <div class="empty-state">
-                                <div class="icon">🏀</div>
-                                <div>Search for a player to see available trade options</div>
+                            <div class="empty-state loading-state">
+                                <div class="icon">⏳</div>
+                                <div>Loading players...</div>
                             </div>
                         </td>
                     </tr>
@@ -955,8 +971,6 @@
     
     <script>
         // Configuration - Replace with your published Google Sheet CSV URL
-        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg6im6IYB6HXMGzQbmmBnLw9SfQLzxCSo8OfChxlJLhsB6BBCO0wPF_TMch0YgAbtFqYkwDWrsxRe7/pub?gid=0&single=true&output=csv';
-        
         // Trade Rumors CSV from GitHub
         const TRADE_RUMORS_URL = 'https://raw.githubusercontent.com/jsierrahoopshype/nba-trade-rumor-rankings/main/trade_rumors.csv';
         
@@ -1709,10 +1723,17 @@
                 ctx.fillText(matchStatus, 520, rowY);
             });
             
-            // Footer
+            // Footer - URL on left, logo on right
             ctx.fillStyle = '#bdc3c7';
             ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
-            ctx.fillText('hoopshype.com/trade-calculator', 30, canvas.height - 10);
+            ctx.fillText('hoopshype.com/trade-calculator', 30, canvas.height - 12);
+            
+            // HoopsHype logo (right side)
+            ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillStyle = '#e74c3c';
+            ctx.fillText('HOOPS', canvas.width - 95, canvas.height - 12);
+            ctx.fillStyle = '#2c3e50';
+            ctx.fillText('HYPE', canvas.width - 42, canvas.height - 12);
             
             // Convert to blob and download/share
             canvas.toBlob(function(blob) {
@@ -1747,14 +1768,8 @@
         // Initialize
         async function init() {
             try {
-                // Load main CSV first (priority)
-                const mainResponse = await fetch(CSV_URL);
-                
-                if (!mainResponse.ok) {
-                    throw new Error(`HTTP ${mainResponse.status}`);
-                }
-                
-                const csv = await mainResponse.text();
+                // Use the fetch that started in <head> (before CSS even loaded)
+                const csv = await window.__csvPromise;
                 allPlayers = parseCSV(csv);
                 
                 // Filter to only players with valid data
